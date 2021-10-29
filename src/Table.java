@@ -1,5 +1,3 @@
-package challenge;
-
 import java.awt.Point;
 import java.util.Random;
 
@@ -269,13 +267,13 @@ public class Table {
     }
 
     public void processKeys() {
-        for (int i = 0; i < Game.keys.length; i++) {
-            if (Game.keyIsDown[i]) {
-                if (!(Game.onlyOnePress[i] && Game.keyAlreadyProcessed[i])) {
+        for (int i = 0; i < Main.instance.controls.length; i++) {
+            if (Main.instance.keyIsDown[i]) {
+                if (!(Main.instance.onlyOnePress[i] && Main.instance.keyAlreadyProcessed[i])) {
                     doAction(i);
-                    Game.keyAlreadyProcessed[i] = true;
+                    Main.instance.keyAlreadyProcessed[i] = true;
                 }
-                Game.howLongIsPressed[i]++;
+                Main.instance.howLongIsPressed[i]++;
             }
         }
     }
@@ -313,7 +311,7 @@ public class Table {
     }
 
     private void calcLimit() {
-        limit = isTouchingGround() ? lockDelay : (Game.keyIsDown[2] ? gravity / gravityMulti : gravity);
+        limit = isTouchingGround() ? lockDelay : (Main.instance.keyIsDown[2] ? gravity / gravityMulti : gravity);
     }
 
     private void checkLockOut() {
@@ -502,7 +500,7 @@ public class Table {
 
     private void initGame() {
         dead = false;
-        Game.paused = false;
+        Main.instance.paused = false;
         stage = new int[STAGESIZEY][STAGESIZEX];
         for (int i = 0; i < STAGESIZEY; i++) {
             for (int j = 0; j < STAGESIZEX; j++) {
@@ -663,7 +661,7 @@ public class Table {
                     Thread.sleep(1);
                 } catch (InterruptedException ignored) {
                 }
-                if (!Game.paused) {
+                if (!Main.instance.paused) {
                     delta += (timeNow - timeLast) / expectedTickTime;
                 }
                 timeLast = timeNow;
