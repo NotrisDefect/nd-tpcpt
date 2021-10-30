@@ -1,20 +1,27 @@
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.Toolkit;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.util.Random;
 
-
-public class Table {
-    public static final byte PIECE_T = 6;
-    public static final byte PIECE_NONE = 7;
-    public static final byte SPIN_NONE = 0;
-    public static final byte SPIN_MINI = 1;
-    public static final byte SPIN_FULL = 2;
+public class a extends JPanel {
+    public static final int PIECE_T = 6;
+    public static final int PIECE_NONE = 7;
+    public static final int SPIN_NONE = 0;
+    public static final int SPIN_MINI = 1;
+    public static final int SPIN_FULL = 2;
     public static final int TPS = 100;
     public static final int ALL_DELAY_MS = 100;
     public static final int LINE_DELAY_MS = 500;
     public static final int ARR_MS = 20;
     public static final int DAS_MS = 160;
     public static final int MANIPS = 15;
-    private static final Point[][][] PIECES = new Point[][][]{
+    public static final Point[][][] PIECEMATRIX = new Point[][][]{
         {
             {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
             {new Point(2, 0), new Point(2, 1), new Point(1, 1), new Point(1, 2)},
@@ -58,29 +65,44 @@ public class Table {
             {new Point(1, 2), new Point(0, 1), new Point(1, 1), new Point(1, 0)}
         }
     };
-    private static final byte[][] STATES = {
-        {-1, 0, 8, 7},
-        {1, -1, 2, 10},
-        {9, 3, -1, 4},
-        {6, 11, 5, -1}
+    public static final int[][] STATES = {
+        {8, 0, 8, 7},
+        {1, 8, 2, 8},
+        {8, 3, 8, 4},
+        {6, 8, 5, 8}
     };
-    private static final int[][] SCORE = {
+    public static final int[][] SCORE = {
         {0, 100, 400},
         {100, 200, 800},
         {300, 400, 1200},
         {500, 0, 1600},
         {800, 0, 2600}
     };
-    private static final int SCORE_ALLCLEAR = 3500;
-    private static final int SCORE_COMBO = 50;
-    private static final int SCORE_SOFTDROP = 1;
-    private static final int SCORE_HARDDROP = 2;
-    private static final int BAG_SIZE = 7;
-    private static final int PIECEPOINTS = 4;
-    private static final double gravityMulti = 20;
-    public final KickTable KICKTABLE = new KickTable(new Point[][][]{
-        {//J, L, S, T, Z Tetromino Wall Kick Data
-
+    public static final int SCORE_ALLCLEAR = 3500;
+    public static final int SCORE_COMBO = 50;
+    public static final int SCORE_SOFTDROP = 1;
+    public static final int SCORE_HARDDROP = 2;
+    public static final int BAG_SIZE = 7;
+    public static final int PIECEPOINTS = 4;
+    public static final double gravityMulti = 20;
+    public static final a instance = new a();
+    public static final boolean[] onlyOnePress = {false, false, false, true, true, true, true, true};
+    public static final int PIECESIZE = 32;
+    public static final int VISIBLEROWS = 21;
+    public static final int GRIDSIZE = 1;
+    public static final int TLCX = 190;
+    public static final int TLCY = -625;
+    public static final Point TLCS = new Point(TLCX, TLCY);
+    public static final Point TLCH = new Point(TLCX - (PIECESIZE + GRIDSIZE) * 5, TLCY + (20) * (PIECESIZE + GRIDSIZE));
+    public static final Point TLCN = new Point(TLCX + (PIECESIZE + GRIDSIZE) * 11, TLCY + (20) * (PIECESIZE + GRIDSIZE));
+    public final String[] kontrols = {"Left", "Right", "Soft drop", "Hard drop", "CCW", "CW", "180", "Hold"};
+    public final int MAINMENU = 0;
+    public final int OPTIONS = 1;
+    public final int GAME = 2;
+    public final int GAMEOVER = 3;
+    public final JFrame frame = new JFrame("Notris Defect");
+    public final Point[][][] KICKTABLE = new Point[][][]{
+        {
             {new Point(0, 0), new Point(-1, 0), new Point(-1, +1), new Point(0, -2), new Point(-1, -2)},
             {new Point(0, 0), new Point(+1, 0), new Point(+1, -1), new Point(0, +2), new Point(+1, +2)},
 
@@ -93,14 +115,9 @@ public class Table {
             {new Point(0, 0), new Point(-1, 0), new Point(-1, -1), new Point(0, +2), new Point(-1, +2)},
             {new Point(0, 0), new Point(+1, 0), new Point(+1, +1), new Point(0, -2), new Point(+1, -2)},
 
-            {},
-            {},
-
-            {},
-            {},
+            {new Point(0, 0)}
         },
-        {//I Tetromino Wall Kick Data
-
+        {
             {new Point(0, 0), new Point(-2, 0), new Point(+1, 0), new Point(-2, -1), new Point(+1, +2)},
             {new Point(0, 0), new Point(+2, 0), new Point(-1, 0), new Point(+2, +1), new Point(-1, -2)},
 
@@ -113,192 +130,73 @@ public class Table {
             {new Point(0, 0), new Point(+1, 0), new Point(-2, 0), new Point(+1, -2), new Point(-2, +1)},
             {new Point(0, 0), new Point(-1, 0), new Point(+2, 0), new Point(-1, +2), new Point(+2, -1)},
 
-            {},
-            {},
-
-            {},
-            {},
+            {new Point(0, 0)}
         }
-    });
-    private final double lockDelay = 0.5d;
-    protected int STAGESIZEX = 10;
-    protected int STAGESIZEY = 40;
+    };
+    public final double lockDelay = 0.5d;
+    public int[] controls = new int[8];
+    public boolean[] keyAlreadyProcessed = new boolean[controls.length];
+    public boolean[] keyIsDown = new boolean[controls.length];
+    public int[] howLongIsPressed = new int[controls.length];
+    public int menuOpen;
+    public int keysPressed = 0;
+    public boolean hasBeenSet = false;
+    public boolean paused = false;
+    public Random pieceRandomizer;
+    public boolean dead = true;
+    public int[][] stage;
+    public Piece current;
+    public Piece[] nextPieces;
+    public int nextPiecesLeft;
+    public Piece heldPiece;
+    public boolean held;
+    public double counter;
+    public double limit;
+    public int combo;
+    public int backToBack;
+    public long ticksPassed;
+    public long totalScore;
+    public long totalLinesCleared;
+    public long totalPiecesPlaced;
+    public int level;
+    public double gravity;
+    public int lowestPossiblePosition;
+    public int spinState;
+    public int waitForClearTicks = 0;
+    public int STAGESIZEX = 10;
+    public int STAGESIZEY = 40;
     public final int[] MANIPS_USED = new int[STAGESIZEY];
-    protected int PLAYABLEROWS = 20;
-    protected int NEXTPIECESMAX = 5;
-    private Random pieceRandomizer;
-    private boolean dead = true;
-    private int[][] stage;
-    private Piece current;
-    private Piece[] nextPieces;
-    private int nextPiecesLeft;
-    private Piece heldPiece;
-    private boolean held;
-    private double counter;
-    private double limit;
-    private int combo;
-    private int backToBack;
-    private long ticksPassed;
-    private long totalScore;
-    private long totalLinesCleared;
-    private long totalPiecesPlaced;
-    private int level;
-    private double gravity;
-    private int lowestPossiblePosition;
-    private int spinState;
-    private int waitForClearTicks = 0;
+    public int PLAYABLEROWS = 20;
+    public int NEXTPIECESMAX = 5;
 
-    public void extAbortGame() {
-        die();
-    }
-
-    public void extDropPieceHard() {
-        hardDropPiece();
-    }
-
-    public void extDropPieceSoft() {
-        movePieceRelative(0, 1);
-        totalScore += Math.max(0, SCORE_SOFTDROP);
-    }
-
-    public void extDropPieceSoftMax() {
-        instantSoftDrop();
-    }
-
-    public void extHoldPiece() {
-        holdPiece();
-    }
-
-    public void extMovePieceLeft() {
-        movePieceRelative(-1, 0);
-    }
-
-    public void extMovePieceLeftMax() {
-        dasLeft();
-    }
-
-    public void extMovePieceRight() {
-        movePieceRelative(1, 0);
-    }
-
-    public void extMovePieceRightMax() {
-        dasRight();
-    }
-
-    public void extRotatePieceCCW() {
-        rotatePiece(-1);
-    }
-
-    public void extRotatePieceCW() {
-        rotatePiece(1);
-    }
-
-    public void extRotatePiece180() {
-        rotatePiece(2);
-    }
-
-    public void extStartGame() {
-        extStartGame(new Random().nextLong());
-    }
-
-    public void extStartGame(double seed) {
-        pieceRandomizer = new Random((long) seed);
-        initGame();
-    }
-
-    public void extTick() {
-        tick();
-    }
-
-    public int getBackToBack() {
-        return backToBack;
-    }
-
-    public int getCombo() {
-        return combo;
-    }
-
-    public double getCounter() {
-        return counter;
-    }
-
-    public Piece getCurrentPiece() {
-        return current;
-    }
-
-    public Piece getHeldPiece() {
-        return heldPiece;
-    }
-
-    public int getLowestPossiblePosition() {
-        return lowestPossiblePosition;
-    }
-
-    public Piece[] getNextPieces() {
-        return nextPieces;
-    }
-
-    public Point[] getPoints(int piece, int rotation) {
-        return PIECES[piece][rotation];
-    }
-
-    public int[][] getStage() {
-        return stage;
-    }
-
-    public long getTicksPassed() {
-        return ticksPassed;
-    }
-
-    public long getTotalLinesCleared() {
-        return totalLinesCleared;
-    }
-
-    public long getTotalPiecesPlaced() {
-        return totalPiecesPlaced;
-    }
-
-    public long getTotalScore() {
-        return totalScore;
-    }
-
-    public boolean isDead() {
-        return dead;
-    }
-
-    public void processKeys() {
-        for (int i = 0; i < Main.instance.controls.length; i++) {
-            if (Main.instance.keyIsDown[i]) {
-                if (!(Main.instance.onlyOnePress[i] && Main.instance.keyAlreadyProcessed[i])) {
-                    doAction(i);
-                    Main.instance.keyAlreadyProcessed[i] = true;
-                }
-                Main.instance.howLongIsPressed[i]++;
-            }
+    public static Color intToColor(int number) {
+        switch (number) {
+            case 0:
+                return Color.RED;
+            case 1:
+                return Color.ORANGE;
+            case 2:
+                return Color.YELLOW;
+            case 3:
+                return Color.GREEN;
+            case 4:
+                return Color.CYAN;
+            case 5:
+                return Color.BLUE;
+            case 6:
+                return Color.MAGENTA;
+            case 7:
+                return Color.BLACK;
+            default:
+                return null;
         }
     }
 
-    protected void evtGameover() {
-
+    public static void main(String[] args) {
+        a.instance.init();
     }
 
-    protected void evtLineClear(int row, int[] content) {
-
-    }
-
-    protected void evtLockPiece(Piece piece, int linesCleared, int spinState, int combo, int backToBack) {
-
-    }
-
-    protected void evtPerfectClear() {
-
-    }
-
-    protected void evtSpin() {
-
-    }
-
-    private void calcCurrentPieceLowestPossiblePosition() {
+    public void calcCurrentPieceLowestPossiblePosition() {
         int result = current.getY();
         while (!isColliding(current.getX(), result + 1, current.getRotation())) {
             result++;
@@ -306,25 +204,25 @@ public class Table {
         lowestPossiblePosition = result;
     }
 
-    private void calcGravity() {
+    public void calcGravity() {
         gravity = Math.pow(0.8 - (level - 1) * 0.007, level - 1);
     }
 
-    private void calcLimit() {
-        limit = isTouchingGround() ? lockDelay : (Main.instance.keyIsDown[2] ? gravity / gravityMulti : gravity);
+    public void calcLimit() {
+        limit = isTouchingGround() ? lockDelay : (a.instance.keyIsDown[2] ? gravity / gravityMulti : gravity);
     }
 
-    private void checkLockOut() {
-        Point[] piece = PIECES[current.getColor()][current.getRotation()];
+    public void checkLockOut() {
+        Point[] piece = PIECEMATRIX[current.getColor()][current.getRotation()];
         for (int i = 0; i < PIECEPOINTS; i++) {
             Point point = piece[i];
             if (stage[point.y + current.getY()][point.x + current.getX()] != PIECE_NONE) {
-                die();
+                dead = true;
             }
         }
     }
 
-    private void checkSpin(int tries, int oldRotation) {
+    public void checkSpin(int tries, int oldRotation) {
         int x = current.getX();
         int y = current.getY();
         int rot = current.getRotation();
@@ -362,27 +260,21 @@ public class Table {
             spinState = SPIN_MINI;
         } else {
             spinState = SPIN_NONE;
-            return;
         }
-
-        evtSpin();
     }
 
-    private void checkTopOut() {
-        Point[] piece = PIECES[current.getColor()][current.getRotation()];
+    public void checkTopOut() {
+        Point[] piece = PIECEMATRIX[current.getColor()][current.getRotation()];
         for (int i = 0; i < PIECEPOINTS; i++) {
             Point point = piece[i];
             if (current.getY() + point.y >= STAGESIZEY - PLAYABLEROWS) {
                 return;
             }
         }
-        die();
+        dead = true;
     }
 
-    private void clearLine(int line) {
-
-        evtLineClear(line, stage[line].clone());
-
+    public void clearLine(int line) {
         for (int i = line; i > 0; i--) {
             System.arraycopy(stage[i - 1], 0, stage[i], 0, STAGESIZEX);
         }
@@ -395,7 +287,7 @@ public class Table {
 
     }
 
-    private int clearLines() {
+    public int clearLines() {
         int numClears = 0;
         boolean yes;
         for (int i = STAGESIZEY - 1; i > 0; i--) {
@@ -416,59 +308,86 @@ public class Table {
         return numClears;
     }
 
-    private void dasLeft() {
-        int num = 0;
-        int x = current.getX();
-        while (!isColliding(x + num - 1, current.getY(), current.getRotation())) {
-            num--;
-        }
-        movePieceRelative(num, 0);
-    }
-
-    private void dasRight() {
-        int num = 0;
-        int x = current.getX();
-        while (!isColliding(x + num + 1, current.getY(), current.getRotation())) {
-            num++;
-        }
-        movePieceRelative(num, 0);
-    }
-
-    private void die() {
-        dead = true;
-        evtGameover();
-    }
-
-    private void doAction(int i) {
+    public void doAction(int i) {
         switch (i) {
             case 0:
-                extMovePieceLeft();
+                movePieceRelative(-1, 0);
                 break;
             case 1:
-                extMovePieceRight();
+                movePieceRelative(1, 0);
                 break;
             case 2:
                 extDropPieceSoft();
                 break;
             case 3:
-                extDropPieceHard();
+                hardDropPiece();
                 break;
             case 4:
-                extRotatePieceCCW();
+                rotatePiece(-1);
                 break;
             case 5:
-                extRotatePieceCW();
+                rotatePiece(1);
                 break;
             case 6:
-                extRotatePiece180();
+                rotatePiece(2);
                 break;
             case 7:
-                extHoldPiece();
+                holdPiece();
                 break;
         }
     }
 
-    private void hardDropPiece() {
+    public void drawCurrent(Graphics g) {
+        g.setColor(intToColor(current.getColor()));
+        for (Point point : PIECEMATRIX[current.getColor()][current.getRotation()]) {
+            drawPix(g, TLCS, point.x + current.getX(), point.y + current.getY());
+        }
+    }
+
+    public void drawHold(Graphics g) {
+        g.setColor(Color.BLACK);
+        g.fillRect(TLCH.x, TLCH.y, (PIECESIZE + GRIDSIZE) * 4, (PIECESIZE + GRIDSIZE) * 4);
+        if (heldPiece != null) {
+            g.setColor(intToColor(heldPiece.getColor()));
+            for (Point point : PIECEMATRIX[heldPiece.getColor()][0]) {
+                drawPix(g, TLCH, point.x, point.y);
+            }
+        }
+    }
+
+    public void drawNext(Graphics g) {
+        g.setColor(Color.BLACK);
+        g.fillRect(TLCN.x, TLCN.y, (PIECESIZE + GRIDSIZE) * 4, (PIECESIZE + GRIDSIZE) * 4 * 5);
+        for (int i = 0; i < 5; i++) {
+            int piece = nextPieces[i].getColor();
+            g.setColor(intToColor(piece));
+            for (Point point : PIECEMATRIX[piece][0]) {
+                drawPix(g, TLCN, point.x, i * 4 + point.y);
+            }
+        }
+    }
+
+    public void drawPix(Graphics g, Point tlc, int x, int y) {
+        g.fillRect(tlc.x + x * (PIECESIZE + GRIDSIZE), tlc.y + y * (PIECESIZE + GRIDSIZE), PIECESIZE, PIECESIZE);
+    }
+
+    public void drawStage(Graphics g) {
+        g.setColor(Color.WHITE);
+        g.fillRect(TLCS.x - 7, TLCS.y - 7 + 625, 10 * 33 + 14, 21 * 33 + 14);
+        for (int i = STAGESIZEY - VISIBLEROWS; i < STAGESIZEY; i++) {
+            for (int j = 0; j < STAGESIZEX; j++) {
+                g.setColor(intToColor(stage[i][j]));
+                drawPix(g, TLCS, j, i);
+            }
+        }
+    }
+
+    public void extDropPieceSoft() {
+        movePieceRelative(0, 1);
+        totalScore += Math.max(0, SCORE_SOFTDROP);
+    }
+
+    public void hardDropPiece() {
         int lines = 0;
         while (!isColliding(current.getX(), current.getY() + lines + 1, current.getRotation())) {
             lines++;
@@ -480,7 +399,7 @@ public class Table {
         lockPiece();
     }
 
-    private void holdPiece() {
+    public void holdPiece() {
         if (!held) {
             if (heldPiece == null) {
                 heldPiece = new Piece(current);
@@ -498,9 +417,58 @@ public class Table {
         }
     }
 
-    private void initGame() {
+    public void init() {
+        menuOpen = MAINMENU;
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(700, 700);
+        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
+        int x = (int) ((dimension.getWidth() - frame.getWidth()) / 2);
+        int y = (int) ((dimension.getHeight() - frame.getHeight()) / 2);
+        frame.setLocation(x, y);
+        frame.setContentPane(instance);
+        frame.pack();
+        frame.setResizable(false);
+        frame.setVisible(true);
+        frame.setLocation(x, y);
+        frame.addKeyListener(new KeyListener() {
+            @Override
+            public void keyTyped(KeyEvent e) {
+
+            }
+
+            @Override
+            public void keyPressed(KeyEvent e) {
+                switch (menuOpen) {
+                    case MAINMENU:
+                        keyPressedMAINMENU(e);
+                        break;
+                    case OPTIONS:
+                        keyPressedOPTIONS(e);
+                        break;
+                    case GAME:
+                        keyPressedGAME(e);
+                        break;
+                    case GAMEOVER:
+                        keyPressedGAMEOVER(e);
+                        break;
+                }
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                switch (menuOpen) {
+                    case GAME:
+                        keyReleasedGAME(e);
+                        break;
+                }
+            }
+        });
+    }
+
+    public void initGame() {
+        pieceRandomizer = new Random();
         dead = false;
-        Main.instance.paused = false;
+        a.instance.paused = false;
         stage = new int[STAGESIZEY][STAGESIZEX];
         for (int i = 0; i < STAGESIZEY; i++) {
             for (int j = 0; j < STAGESIZEX; j++) {
@@ -531,20 +499,10 @@ public class Table {
         roomLoop();
     }
 
-    private void instantSoftDrop() {
-        int num = 0;
-        int y = current.getY();
-        while (!isColliding(current.getX(), y + num + 1, current.getRotation())) {
-            num++;
-        }
-        totalScore += (long) SCORE_SOFTDROP * num;
-        movePieceRelative(0, num);
-    }
-
-    private boolean isColliding(int x, int y, int rotation) {
+    public boolean isColliding(int x, int y, int rotation) {
         Point[] temp;
 
-        temp = PIECES[current.getColor()][rotation];
+        temp = PIECEMATRIX[current.getColor()][rotation];
         for (int i = 0; i < PIECEPOINTS; i++) {
             Point point = temp[i];
             if (isInsideBounds(x + point.x, y + point.y)) {
@@ -558,24 +516,83 @@ public class Table {
         return false;
     }
 
-    private boolean isInsideBounds(int x, int y) {
+    public boolean isInsideBounds(int x, int y) {
         return y >= 0 && STAGESIZEY > y && x >= 0 && STAGESIZEX > x;
     }
 
-    private boolean isSolid(int x, int y) {
+    public boolean isSolid(int x, int y) {
         return !isInsideBounds(x, y) || stage[y][x] != PIECE_NONE;
     }
 
-    private boolean isTouchingGround() {
+    public boolean isTouchingGround() {
         return isColliding(current.getX(), current.getY() + 1, current.getRotation());
     }
 
-    private void lockPiece() {
+    public void keyPressedGAME(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_P) {
+            paused ^= true;
+        } else if (e.getKeyCode() == KeyEvent.VK_B) {
+            dead = true;
+            menuOpen = MAINMENU;
+        }
+
+        int key = e.getKeyCode();
+        for (int i = 0; i < controls.length; i++) {
+            if (key == controls[i]) {
+                keyIsDown[i] = true;
+                break;
+            }
+        }
+    }
+
+    public void keyPressedGAMEOVER(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_R) {
+            initGame();
+            menuOpen = GAME;
+        } else if (e.getKeyCode() == KeyEvent.VK_B) {
+            menuOpen = MAINMENU;
+        }
+    }
+
+    public void keyPressedMAINMENU(KeyEvent e) {
+        if (e.getKeyCode() == KeyEvent.VK_P) {
+            initGame();
+            menuOpen = GAME;
+        } else if (e.getKeyCode() == KeyEvent.VK_O) {
+            menuOpen = OPTIONS;
+        }
+    }
+
+    public void keyPressedOPTIONS(KeyEvent e) {
+        controls[keysPressed] = e.getKeyCode();
+        keysPressed++;
+        if (keysPressed == 8) {
+            hasBeenSet = true;
+            keysPressed = 0;
+            menuOpen = MAINMENU;
+        } else {
+            repaint();
+        }
+    }
+
+    public void keyReleasedGAME(KeyEvent e) {
+        int key = e.getKeyCode();
+        for (int i = 0; i < controls.length; i++) {
+            if (key == controls[i]) {
+                keyIsDown[i] = false;
+                keyAlreadyProcessed[i] = false;
+                howLongIsPressed[i] = 0;
+                break;
+            }
+        }
+    }
+
+    public void lockPiece() {
         Point[] temp;
 
         totalPiecesPlaced++;
 
-        temp = PIECES[current.getColor()][current.getRotation()];
+        temp = PIECEMATRIX[current.getColor()][current.getRotation()];
         for (int i = 0; i < PIECEPOINTS; i++) {
             Point p = temp[i];
             stage[current.getY() + p.y][current.getX() + p.x] = current.getColor();
@@ -590,7 +607,6 @@ public class Table {
 
             if (totalLinesCleared * STAGESIZEX == totalPiecesPlaced * PIECEPOINTS) {
                 totalScore += SCORE_ALLCLEAR;
-                evtPerfectClear();
             }
 
             if (linesCleared == 4 || spinState != SPIN_NONE) {
@@ -608,12 +624,10 @@ public class Table {
             waitForClearTicks += ((double) ALL_DELAY_MS / 1000) * TPS;
         }
 
-        evtLockPiece(current, linesCleared, spinState, combo, backToBack);
-
         makeNextPiece();
     }
 
-    private void makeNextPiece() {
+    public void makeNextPiece() {
         while (nextPiecesLeft <= NEXTPIECESMAX) {
             int[] bag = new int[BAG_SIZE];
             for (int i = 0; i < BAG_SIZE; i++) {
@@ -631,7 +645,7 @@ public class Table {
         checkLockOut();
     }
 
-    private boolean movePiece(int newX, int newY, int newR) {
+    public boolean movePiece(int newX, int newY, int newR) {
         if (!isColliding(newX, newY, newR)) {
             counter = 0;
             current.setX(newX);
@@ -645,13 +659,89 @@ public class Table {
         return false;
     }
 
-    private boolean movePieceRelative(int xOffset, int yOffset) {
+    public boolean movePieceRelative(int xOffset, int yOffset) {
         return movePiece(current.getX() + xOffset, current.getY() + yOffset, current.getRotation());
     }
 
-    private void roomLoop() {
+    @Override
+    public void paintComponent(Graphics g) {
+        g.setColor(Color.YELLOW);
+        g.fillRect(0, 0, 700, 700);
+        switch (menuOpen) {
+            case MAINMENU:
+                paintComponentMAINMENU(g);
+                break;
+            case OPTIONS:
+                paintComponentOPTIONS(g);
+                break;
+            case GAME:
+                paintComponentGAME(g);
+                break;
+            case GAMEOVER:
+                paintComponentGAMEOVER(g);
+                break;
+        }
+        repaint();
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(700, 700);
+    }
+
+    public void paintComponentGAME(Graphics g) {
+        long timeStart = System.nanoTime();
+
+        g.setColor(Color.WHITE);
+        g.drawString("Score: " + totalScore, 30, 30);
+
+        drawStage(g);
+        drawHold(g);
+        drawNext(g);
+        drawCurrent(g);
+
+        long timeEnd = System.nanoTime();
+        long timeElapsed = timeEnd - timeStart;
+        g.setColor(Color.YELLOW);
+        g.drawString(1000000000 / timeElapsed + " FPS", 10, 10);
+        if (dead) {
+            menuOpen = GAMEOVER;
+        }
+    }
+
+    public void paintComponentGAMEOVER(Graphics g) {
+        g.setColor(Color.BLACK);
+        g.drawString("Game over, score: " + totalScore, 300, 300);
+        g.drawString("Press R to retry", 300, 315);
+        g.drawString("Press B to back", 300, 330);
+    }
+
+    public void paintComponentMAINMENU(Graphics g) {
+        g.setColor(Color.BLACK);
+        g.drawString("Press P to play", 300, 300);
+        g.drawString("Press O for options", 300, 315);
+    }
+
+    public void paintComponentOPTIONS(Graphics g) {
+        g.setColor(Color.BLACK);
+        g.drawString(kontrols[keysPressed], 300, 300);
+    }
+
+    public void processKeys() {
+        for (int i = 0; i < a.instance.controls.length; i++) {
+            if (a.instance.keyIsDown[i]) {
+                if (!(onlyOnePress[i] && a.instance.keyAlreadyProcessed[i])) {
+                    doAction(i);
+                    a.instance.keyAlreadyProcessed[i] = true;
+                }
+                a.instance.howLongIsPressed[i]++;
+            }
+        }
+    }
+
+    public void roomLoop() {
         new Thread(() -> {
-            final double expectedTickTime = 1e9 / Table.TPS;
+            final double expectedTickTime = 1e9 / TPS;
             long timeLast = System.nanoTime();
             long timeNow;
             double delta = 0;
@@ -661,7 +751,7 @@ public class Table {
                     Thread.sleep(1);
                 } catch (InterruptedException ignored) {
                 }
-                if (!Main.instance.paused) {
+                if (!a.instance.paused) {
                     delta += (timeNow - timeLast) / expectedTickTime;
                 }
                 timeLast = timeNow;
@@ -677,22 +767,21 @@ public class Table {
         }).start();
     }
 
-    private void rotatePiece(int d) {
+    public void rotatePiece(int d) {
         int oldRotation = current.getRotation();
         int newRotation = (current.getRotation() + d + 4) % 4;
         int piece = current.getColor();
         int state = STATES[oldRotation][newRotation];
 
-        for (int tries = 0; tries < KICKTABLE.maxTries(piece, state); tries++) {
-            if (movePiece(current.getX() + KICKTABLE.getX(piece, state, tries), current.getY() - KICKTABLE.getY(piece, state, tries), newRotation)) {
+        for (int tries = 0; tries < KICKTABLE[piece == 4 ? 1 : 0][state].length; tries++) {
+            if (movePiece(current.getX() + KICKTABLE[piece == 4 ? 1 : 0][state][tries].x, current.getY() - KICKTABLE[piece == 4 ? 1 : 0][state][tries].y, newRotation)) {
                 checkSpin(tries, oldRotation);
                 return;
             }
         }
-
     }
 
-    private void shuffleArray(int[] ar) {
+    public void shuffleArray(int[] ar) {
         for (int i = ar.length - 1; i > 0; i--) {
             int index = ((pieceRandomizer.nextInt() % (i + 1) + i + 1)) % (i + 1);
             // Simple swap
@@ -702,7 +791,7 @@ public class Table {
         }
     }
 
-    private void spawnPiece() {
+    public void spawnPiece() {
         current = nextPieces[0];
         System.arraycopy(nextPieces, 1, nextPieces, 0, nextPieces.length - 1);
         nextPiecesLeft--;
@@ -713,7 +802,7 @@ public class Table {
         calcLimit();
     }
 
-    private void tick() {
+    public void tick() {
         processKeys();
         counter += 1 / (double) TPS;
 
@@ -723,83 +812,5 @@ public class Table {
             }
         }
         ticksPassed++;
-    }
-
-    public class KickTable {
-
-        private final Point[][][] kicks;
-
-        public KickTable(Point[][][] kicks) {
-            this.kicks = kicks;
-        }
-
-        public int getX(int piece, int state, int tries) {
-            return kicks[piece == 4 ? 1 : 0][state][tries].x;
-        }
-
-        public int getY(int piece, int state, int tries) {
-            return kicks[piece == 4 ? 1 : 0][state][tries].y;
-        }
-
-        public int maxTries(int piece, int state) {
-            return kicks[piece == 4 ? 1 : 0][state].length;
-        }
-
-    }
-
-    public class Piece {
-
-        private int color;
-        private int x;
-        private int y;
-        private int rotation;
-
-        public Piece(Piece p) {
-            this(p.getColor());
-        }
-
-        public Piece(int color) {
-            this(color, 3, 21, 0);
-        }
-
-        public Piece(int color, int x, int y, int rotation) {
-            this.color = color;
-            this.x = x;
-            this.y = y;
-            this.rotation = rotation;
-        }
-
-        public int getColor() {
-            return color;
-        }
-
-        public void setColor(int color) {
-            this.color = color;
-        }
-
-        public int getRotation() {
-            return rotation;
-        }
-
-        public void setRotation(int rotation) {
-            this.rotation = rotation;
-        }
-
-        public int getX() {
-            return x;
-        }
-
-        public void setX(int x) {
-            this.x = x;
-        }
-
-        public int getY() {
-            return y;
-        }
-
-        public void setY(int y) {
-            this.y = y;
-        }
-
     }
 }
