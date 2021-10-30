@@ -21,49 +21,16 @@ public class a extends JPanel {
     public static final int ARR_MS = 20;
     public static final int DAS_MS = 160;
     public static final int MANIPS = 15;
-    public static final Point[][][] PIECEMATRIX = new Point[][][]{
-        {
-            {new Point(0, 0), new Point(1, 0), new Point(1, 1), new Point(2, 1)},
-            {new Point(2, 0), new Point(2, 1), new Point(1, 1), new Point(1, 2)},
-            {new Point(2, 2), new Point(1, 2), new Point(1, 1), new Point(0, 1)},
-            {new Point(0, 2), new Point(0, 1), new Point(1, 1), new Point(1, 0)}
-        },
-        {
-            {new Point(2, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
-            {new Point(1, 0), new Point(1, 2), new Point(1, 1), new Point(2, 2)},
-            {new Point(0, 2), new Point(2, 1), new Point(1, 1), new Point(0, 1)},
-            {new Point(1, 2), new Point(1, 0), new Point(1, 1), new Point(0, 0)}
-        },
-        {
-            {new Point(1, 0), new Point(2, 0), new Point(1, 1), new Point(2, 1)},
-            {new Point(1, 0), new Point(1, 1), new Point(2, 0), new Point(2, 1)},
-            {new Point(2, 1), new Point(1, 1), new Point(2, 0), new Point(1, 0)},
-            {new Point(2, 1), new Point(2, 0), new Point(1, 1), new Point(1, 0)},
-        },
-        {
-            {new Point(1, 0), new Point(2, 0), new Point(0, 1), new Point(1, 1)},
-            {new Point(1, 0), new Point(2, 1), new Point(1, 1), new Point(2, 2)},
-            {new Point(1, 2), new Point(0, 2), new Point(2, 1), new Point(1, 1)},
-            {new Point(1, 2), new Point(0, 1), new Point(1, 1), new Point(0, 0)}
-        },
-        {
-            {new Point(0, 1), new Point(1, 1), new Point(2, 1), new Point(3, 1)},
-            {new Point(2, 0), new Point(2, 2), new Point(2, 1), new Point(2, 3)},
-            {new Point(3, 2), new Point(2, 2), new Point(1, 2), new Point(0, 2)},
-            {new Point(1, 3), new Point(1, 2), new Point(1, 1), new Point(1, 0)}
-        },
-        {
-            {new Point(0, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
-            {new Point(1, 0), new Point(1, 1), new Point(2, 0), new Point(1, 2)},
-            {new Point(2, 2), new Point(2, 1), new Point(1, 1), new Point(0, 1)},
-            {new Point(0, 2), new Point(1, 2), new Point(1, 1), new Point(1, 0)}
-        },
-        {
-            {new Point(1, 0), new Point(0, 1), new Point(1, 1), new Point(2, 1)},
-            {new Point(1, 0), new Point(2, 1), new Point(1, 1), new Point(1, 2)},
-            {new Point(1, 2), new Point(2, 1), new Point(1, 1), new Point(0, 1)},
-            {new Point(1, 2), new Point(0, 1), new Point(1, 1), new Point(1, 0)}
-        }
+    public static final int X = 1;
+    public static final int Y = 0;
+    public static final int[][] PIECEMATRIX = new int[][]{
+        {0b0000010001011001, 0b1000100101010110, 0b1010011001010001, 0b0010000101010100},
+        {0b1000000101011001, 0b0100011001011010, 0b0010100101010001, 0b0110010001010000},
+        {0b0100100001011001, 0b0100010110001001, 0b1001010110000100, 0b1001100001010100},
+        {0b0100100000010101, 0b0100100101011010, 0b0110001010010101, 0b0110000101010000},
+        {0b0001010110011101, 0b1000101010011011, 0b1110101001100010, 0b0111011001010100},
+        {0b0000000101011001, 0b0100010110000110, 0b1010100101010001, 0b0010011001010100},
+        {0b0100000101011001, 0b0100100101010110, 0b0110100101010001, 0b0110000101010100}
     };
     public static final int[][] STATES = {
         {8, 0, 8, 7},
@@ -95,13 +62,12 @@ public class a extends JPanel {
     public static final Point TLCS = new Point(TLCX, TLCY);
     public static final Point TLCH = new Point(TLCX - (PIECESIZE + GRIDSIZE) * 5, TLCY + (20) * (PIECESIZE + GRIDSIZE));
     public static final Point TLCN = new Point(TLCX + (PIECESIZE + GRIDSIZE) * 11, TLCY + (20) * (PIECESIZE + GRIDSIZE));
-    public final String[] kontrols = {"Left", "Right", "Soft drop", "Hard drop", "CCW", "CW", "180", "Hold"};
-    public final int MAINMENU = 0;
-    public final int OPTIONS = 1;
-    public final int GAME = 2;
-    public final int GAMEOVER = 3;
-    public final JFrame frame = new JFrame("Notris Defect");
-    public final Point[][][] KICKTABLE = new Point[][][]{
+    public static final String[] kontrols = {"Left", "Right", "Soft drop", "Hard drop", "CCW", "CW", "180", "Hold"};
+    public static final int MAINMENU = 0;
+    public static final int OPTIONS = 1;
+    public static final int GAME = 2;
+    public static final int GAMEOVER = 3;
+    public static final Point[][][] KICKTABLE = new Point[][][]{
         {
             {new Point(0, 0), new Point(-1, 0), new Point(-1, +1), new Point(0, -2), new Point(-1, -2)},
             {new Point(0, 0), new Point(+1, 0), new Point(+1, -1), new Point(0, +2), new Point(+1, +2)},
@@ -133,6 +99,7 @@ public class a extends JPanel {
             {new Point(0, 0)}
         }
     };
+    public final JFrame frame = new JFrame("Notris Defect");
     public final double lockDelay = 0.5d;
     public int[] controls = new int[8];
     public boolean[] keyAlreadyProcessed = new boolean[controls.length];
@@ -213,10 +180,9 @@ public class a extends JPanel {
     }
 
     public void checkLockOut() {
-        Point[] piece = PIECEMATRIX[current.getColor()][current.getRotation()];
+        int piece = PIECEMATRIX[current.getColor()][current.getRotation()];
         for (int i = 0; i < PIECEPOINTS; i++) {
-            Point point = piece[i];
-            if (stage[point.y + current.getY()][point.x + current.getX()] != PIECE_NONE) {
+            if (stage[shift(piece, i, Y) + current.getY()][shift(piece, i, X) + current.getX()] != PIECE_NONE) {
                 dead = true;
             }
         }
@@ -264,10 +230,9 @@ public class a extends JPanel {
     }
 
     public void checkTopOut() {
-        Point[] piece = PIECEMATRIX[current.getColor()][current.getRotation()];
+        int piece = PIECEMATRIX[current.getColor()][current.getRotation()];
         for (int i = 0; i < PIECEPOINTS; i++) {
-            Point point = piece[i];
-            if (current.getY() + point.y >= STAGESIZEY - PLAYABLEROWS) {
+            if (current.getY() + shift(piece, i, Y) >= STAGESIZEY - PLAYABLEROWS) {
                 return;
             }
         }
@@ -339,8 +304,9 @@ public class a extends JPanel {
 
     public void drawCurrent(Graphics g) {
         g.setColor(intToColor(current.getColor()));
-        for (Point point : PIECEMATRIX[current.getColor()][current.getRotation()]) {
-            drawPix(g, TLCS, point.x + current.getX(), point.y + current.getY());
+        int piece = PIECEMATRIX[current.getColor()][current.getRotation()];
+        for (int i = 0; i < PIECEPOINTS; i++) {
+            drawPix(g, TLCS, shift(piece, i, X) + current.getX(), shift(piece, i, Y) + current.getY());
         }
     }
 
@@ -349,8 +315,9 @@ public class a extends JPanel {
         g.fillRect(TLCH.x, TLCH.y, (PIECESIZE + GRIDSIZE) * 4, (PIECESIZE + GRIDSIZE) * 4);
         if (heldPiece != null) {
             g.setColor(intToColor(heldPiece.getColor()));
-            for (Point point : PIECEMATRIX[heldPiece.getColor()][0]) {
-                drawPix(g, TLCH, point.x, point.y);
+            int piece = PIECEMATRIX[heldPiece.getColor()][0];
+            for (int i = 0; i < PIECEPOINTS; i++) {
+                drawPix(g, TLCH, shift(piece, i, X), shift(piece, i, Y));
             }
         }
     }
@@ -361,8 +328,9 @@ public class a extends JPanel {
         for (int i = 0; i < 5; i++) {
             int piece = nextPieces[i].getColor();
             g.setColor(intToColor(piece));
-            for (Point point : PIECEMATRIX[piece][0]) {
-                drawPix(g, TLCN, point.x, i * 4 + point.y);
+            int piecei = PIECEMATRIX[piece][0];
+            for (int j = 0; j < PIECEPOINTS; j++) {
+                drawPix(g, TLCN, shift(piecei, j, X), i * 4 + shift(piecei, j, Y));
             }
         }
     }
@@ -456,10 +424,8 @@ public class a extends JPanel {
 
             @Override
             public void keyReleased(KeyEvent e) {
-                switch (menuOpen) {
-                    case GAME:
-                        keyReleasedGAME(e);
-                        break;
+                if (menuOpen == GAME) {
+                    keyReleasedGAME(e);
                 }
             }
         });
@@ -500,13 +466,12 @@ public class a extends JPanel {
     }
 
     public boolean isColliding(int x, int y, int rotation) {
-        Point[] temp;
-
-        temp = PIECEMATRIX[current.getColor()][rotation];
+        int temp = PIECEMATRIX[current.getColor()][rotation];
         for (int i = 0; i < PIECEPOINTS; i++) {
-            Point point = temp[i];
-            if (isInsideBounds(x + point.x, y + point.y)) {
-                if (stage[point.y + y][point.x + x] != PIECE_NONE) {
+            int tx = shift(temp, i, X);
+            int ty = shift(temp, i, Y);
+            if (isInsideBounds(x + tx, y + ty)) {
+                if (stage[y + ty][x + tx] != PIECE_NONE) {
                     return true;
                 }
             } else {
@@ -588,14 +553,12 @@ public class a extends JPanel {
     }
 
     public void lockPiece() {
-        Point[] temp;
+        int temp = PIECEMATRIX[current.getColor()][current.getRotation()];
 
         totalPiecesPlaced++;
 
-        temp = PIECEMATRIX[current.getColor()][current.getRotation()];
         for (int i = 0; i < PIECEPOINTS; i++) {
-            Point p = temp[i];
-            stage[current.getY() + p.y][current.getX() + p.x] = current.getColor();
+            stage[current.getY() + shift(temp, i, Y)][current.getX() + shift(temp, i, X)] = current.getColor();
         }
 
         checkTopOut();
@@ -779,6 +742,10 @@ public class a extends JPanel {
                 return;
             }
         }
+    }
+
+    public int shift(int n, int i, int or) {
+        return n >> 2 * (i * 2 + or) & 0b11;
     }
 
     public void shuffleArray(int[] ar) {
