@@ -50,19 +50,8 @@ public class a extends JPanel {
     public static final int SCORE_HARDDROP = 2;
     public static final double gravityMulti = 20;
     public static final a instance = new a();
-    public static final boolean[] onlyOnePress = {true, true, false, true, true, true, true, true};
-    public static final int PIECESIZE = 32;
     public static final int VISIBLEROWS = 21;
-    public static final int GRIDSIZE = 1;
-    public static final int TLCX = 190;
-    public static final int TLCY = -625;
-    public static final int TLCSX = TLCX;
-    public static final int TLCSY = TLCY;
-    public static final int TLCHX = TLCX - (PIECESIZE + GRIDSIZE) * 5;
-    public static final int TLCHY = TLCY + (20) * (PIECESIZE + GRIDSIZE);
-    public static final int TLCNX = TLCX + (PIECESIZE + GRIDSIZE) * 11;
-    public static final int TLCNY = TLCY + (20) * (PIECESIZE + GRIDSIZE);
-    public static final String[] kontrols = {"Left", "Right", "Soft drop", "Hard drop", "CCW", "CW", "180", "Hold"};
+    public static final String[] kontrols = {"left", "right", "sd", "hd", "ccw", "cw", "180", "hold"};
     public static final int MAINMENU = 0;
     public static final int OPTIONS = 1;
     public static final int GAME = 2;
@@ -337,7 +326,7 @@ public class a extends JPanel {
     }
 
     public void drawPix(Graphics g, int tlcx, int tlcy, int x, int y) {
-        g.fillRect(tlcx + x * (PIECESIZE + GRIDSIZE), tlcy + y * (PIECESIZE + GRIDSIZE), PIECESIZE, PIECESIZE);
+        g.fillRect(tlcx + x * 33, tlcy + y * 33, 32, 32);
     }
 
     public void init() {
@@ -354,7 +343,7 @@ public class a extends JPanel {
         frame.pack();
         frame.setResizable(false);
         frame.setVisible(true);
-        frame.setLocation(100, 100);
+        frame.setLocation(300, 50);
         frame.addKeyListener(new KeyListener() {
             @Override
             public void keyTyped(KeyEvent e) {
@@ -393,7 +382,7 @@ public class a extends JPanel {
                         }
                         break;
                     case GAME:
-                        if (e.getKeyCode() == KeyEvent.VK_P) {
+                        if (e.getKeyCode() == KeyEvent.VK_E) {
                             paused ^= true;
                         } else if (e.getKeyCode() == KeyEvent.VK_B) {
                             dead = true;
@@ -528,6 +517,7 @@ public class a extends JPanel {
             }
 
             level = Math.min((int) (totalLinesCleared / 10 + 1), 20);
+            calcGravity();
 
             totalScore += SCORE[linesCleared][spinState] * (backToBack > 0 ? 1.5 : 1) + (long) combo * SCORE_COMBO * level;
             waitForClearTicks += LINECLEARDELAY * TPS;
@@ -583,81 +573,80 @@ public class a extends JPanel {
     @Override
     public void paintComponent(Graphics g) {
         g.setColor(Color.YELLOW);
-        g.fillRect(0, 0, 700, 700);
+        g.fillRect(0, 0, 720, 720);
         switch (menuOpen) {
             case MAINMENU:
                 g.setColor(Color.BLACK);
-                g.drawString("Press P to play", 300, 300);
-                g.drawString("Press O for options", 300, 315);
+                g.drawString("Play", 300, 300);
+                g.drawString("Options", 300, 315);
                 break;
             case OPTIONS:
                 g.setColor(Color.BLACK);
                 g.drawString(kontrols[keysPressed], 300, 300);
                 break;
             case GAME:
-                long timeStart = System.nanoTime();
-
                 g.setColor(Color.BLACK);
-                g.drawString("Score: " + totalScore, 30, 330);
-                g.drawString("paused: " + paused, 30, 345);
-                g.drawString("wait: " + waitForClearTicks, 30, 360);
-                g.drawString("left: " + howLongIsPressed[0], 30, 375);
-                g.drawString("right: " + howLongIsPressed[1], 30, 390);
+                g.drawString(paused ? "resumE" : "pausE", 30, 300);
+                g.drawString("Back", 30, 315);
+
+                g.drawString("score: " + totalScore, 30, 400);
+                g.drawString("wait: " + waitForClearTicks, 30, 415);
+                g.drawString("level: " + level, 30, 430);
+                g.drawString("grav: " + gravity, 30, 445);
+                g.drawString("ln: " + totalLinesCleared, 30, 460);
+                g.drawString("limit: " + limit, 30, 475);
+
 
                 // stage hold next current
                 g.setColor(Color.WHITE);
-                g.fillRect(TLCSX - 7, TLCSY - 7 + 625, 10 * 33 + 14, 21 * 33 + 14);
+                g.fillRect(185, 12, 350, 703);
                 for (int i = STAGESIZEY - VISIBLEROWS; i < STAGESIZEY; i++) {
                     for (int j = 0; j < STAGESIZEX; j++) {
                         g.setColor(intToColor(stage[i][j]));
-                        drawPix(g, TLCSX, TLCSY, j, i);
+                        drawPix(g, 195, -615, j, i);
                     }
                 }
 
                 g.setColor(Color.BLACK);
-                g.fillRect(TLCHY, TLCHY, (PIECESIZE + GRIDSIZE) * 4, (PIECESIZE + GRIDSIZE) * 4);
+                g.fillRect(30, 45, 132, 132);
                 if (heldPiece != -1) {
                     g.setColor(intToColor(heldPiece));
                     int piece = PIECEMATRIX[heldPiece][0];
                     for (int i = 0; i < 4; i++) {
-                        drawPix(g, TLCHX, TLCHY, shift(piece, i, X), shift(piece, i, Y));
+                        drawPix(g, 30, 45, shift(piece, i, X), shift(piece, i, Y));
                     }
                 }
 
                 g.setColor(Color.BLACK);
-                g.fillRect(TLCNX, TLCNY, (PIECESIZE + GRIDSIZE) * 4, (PIECESIZE + GRIDSIZE) * 4 * 5);
+                g.fillRect(558, 45, 132, 660);
                 for (int i = 0; i < 5; i++) {
                     int piece = nextPieces[i];
                     g.setColor(intToColor(piece));
                     int piecei = PIECEMATRIX[piece][0];
                     for (int j = 0; j < 4; j++) {
-                        drawPix(g, TLCNX, TLCNY, shift(piecei, j, X), i * 4 + shift(piecei, j, Y));
+                        drawPix(g, 558, 45, shift(piecei, j, X), i * 4 + shift(piecei, j, Y));
                     }
                 }
 
                 int piece = PIECEMATRIX[current][currentR];
                 for (int i = 0; i < 4; i++) {
                     g.setColor(Color.WHITE);
-                    drawPix(g, TLCSX, TLCSY, shift(piece, i, X) + currentX, shift(piece, i, Y) + lowestPossiblePosition);
+                    drawPix(g, 195, -615, shift(piece, i, X) + currentX, shift(piece, i, Y) + lowestPossiblePosition);
                 }
                 for (int i = 0; i < 4; i++) {
                     g.setColor(intToColor(current));
-                    drawPix(g, TLCSX, TLCSY, shift(piece, i, X) + currentX, shift(piece, i, Y) + currentY);
+                    drawPix(g, 195, -615, shift(piece, i, X) + currentX, shift(piece, i, Y) + currentY);
                 }
 
-                long timeEnd = System.nanoTime();
-                long timeElapsed = timeEnd - timeStart;
-                g.setColor(Color.YELLOW);
-                g.drawString(1000000000 / timeElapsed + " FPS", 10, 10);
                 if (dead) {
                     menuOpen = GAMEOVER;
                 }
                 break;
             case GAMEOVER:
                 g.setColor(Color.BLACK);
-                g.drawString("Game over, score: " + totalScore, 300, 300);
-                g.drawString("Press R to retry", 300, 315);
-                g.drawString("Press B to back", 300, 330);
+                g.drawString("score: " + totalScore, 300, 300);
+                g.drawString("Retry", 300, 315);
+                g.drawString("Back", 300, 330);
                 break;
         }
         repaint();
@@ -665,13 +654,13 @@ public class a extends JPanel {
 
     @Override
     public Dimension getPreferredSize() {
-        return new Dimension(700, 700);
+        return new Dimension(720, 720);
     }
 
     public void processKeys() {
         for (int i = 0; i < controls.length; i++) {
             if (keyIsDown[i]) {
-                if (!(onlyOnePress[i] && keyAlreadyProcessed[i])) {
+                if (!keyAlreadyProcessed[i]) {
                     doAction(i);
                     keyAlreadyProcessed[i] = true;
                 }
