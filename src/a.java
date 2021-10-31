@@ -101,7 +101,6 @@ public class a extends JPanel {
     public int[] howLongIsPressed = new int[controls.length];
     public int menuOpen;
     public int keysPressed = 0;
-    public boolean hasBeenSet = false;
     public boolean paused = false;
     public Random pieceRandomizer;
     public boolean dead = true;
@@ -130,9 +129,10 @@ public class a extends JPanel {
     public int waitForShiftTicks;
     public int STAGESIZEX = 10;
     public int STAGESIZEY = 40;
-    public final int[] MANIPS_USED = new int[STAGESIZEY];
     public int PLAYABLEROWS = 20;
     public int NEXTPIECESMAX = 5;
+    public int manipulations;
+    public int lowest;
 
     public static Color intToColor(int number) {
         switch (number) {
@@ -312,7 +312,11 @@ public class a extends JPanel {
                     } else {
                         int temp = current;
                         current = heldPiece;
+                        manipulations = 0;
                         movePiece(3, 21, 0);
+                        lowest = 0;
+                        manipulations = 0;
+                        movePieceRelative(0, 1);
                         heldPiece = temp;
                         calcCurrentPieceLowestPossiblePosition();
                         counter = 0;
@@ -335,7 +339,7 @@ public class a extends JPanel {
             for (int i = 0; i < controls.length; i++) {
                 controls[i] = Integer.parseInt(br.readLine());
             }
-        } catch (IOException e) {
+        } catch (IOException ignored) {
         }
         menuOpen = MAINMENU;
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -365,12 +369,11 @@ public class a extends JPanel {
                         controls[keysPressed] = e.getKeyCode();
                         keysPressed++;
                         if (keysPressed == 8) {
-                            hasBeenSet = true;
                             keysPressed = 0;
                             try {
                                 FileWriter fw = new FileWriter("controls.txt");
-                                for (int i = 0; i < controls.length; i++) {
-                                    fw.write(controls[i] + "\n");
+                                for (int control : controls) {
+                                    fw.write(control + "\n");
                                 }
                                 fw.close();
                             } catch (IOException ex) {
@@ -436,6 +439,8 @@ public class a extends JPanel {
             }
         }
 
+        lowest = 0;
+        manipulations = 0;
         waitForClearTicks = 0;
         waitForShiftTicks = 0;
 
@@ -519,7 +524,7 @@ public class a extends JPanel {
             level = Math.min((int) (totalLinesCleared / 10 + 1), 20);
             calcGravity();
 
-            totalScore += SCORE[linesCleared][spinState] * (backToBack > 0 ? 1.5 : 1) + (long) combo * SCORE_COMBO * level;
+            totalScore += (SCORE[linesCleared][spinState] * (backToBack > 0 ? 1.5 : 1) + (long) combo * SCORE_COMBO) * level;
             waitForClearTicks += LINECLEARDELAY * TPS;
         } else {
             combo = -1;
@@ -541,9 +546,7 @@ public class a extends JPanel {
                 bag[index] = bag[i];
                 bag[i] = a;
             }
-            for (int i = 0; i < 7; i++) {
-                nextPieces[nextPiecesLeft + i] = bag[i];
-            }
+            System.arraycopy(bag, 0, nextPieces, nextPiecesLeft, 7);
             nextPiecesLeft += 7;
         }
 
@@ -555,12 +558,22 @@ public class a extends JPanel {
     public boolean movePiece(int newX, int newY, int newR) {
         if (!isColliding(newX, newY, newR)) {
             counter = 0;
+            manipulations++;
             currentX = newX;
             currentY = newY;
             currentR = newR;
             spinState = SPIN_NONE;
             calcCurrentPieceLowestPossiblePosition();
             calcLimit();
+            if (manipulations > 15) {
+                manipulations = 0;
+                if (!movePieceRelative(0, +1)) {
+                    lockPiece();
+                }
+            } else if (newY > lowest) {
+                lowest = newY;
+                manipulations = 0;
+            }
             return true;
         }
         return false;
@@ -595,7 +608,6 @@ public class a extends JPanel {
                 g.drawString("grav: " + gravity, 30, 445);
                 g.drawString("ln: " + totalLinesCleared, 30, 460);
                 g.drawString("limit: " + limit, 30, 475);
-
 
                 // stage hold next current
                 g.setColor(Color.WHITE);
@@ -724,7 +736,11 @@ public class a extends JPanel {
 
     public void spawnPiece() {
         current = nextPieces[0];
+        manipulations = 0;
         movePiece(3, 21, 0);
+        lowest = 0;
+        manipulations = 0;
+        movePieceRelative(0, 1);
         System.arraycopy(nextPieces, 1, nextPieces, 0, nextPieces.length - 1);
         nextPiecesLeft--;
         held = false;
