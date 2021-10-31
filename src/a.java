@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Point;
-import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.Random;
@@ -16,11 +15,7 @@ public class a extends JPanel {
     public static final int SPIN_MINI = 1;
     public static final int SPIN_FULL = 2;
     public static final int TPS = 100;
-    public static final int ALL_DELAY_MS = 100;
-    public static final int LINE_DELAY_MS = 500;
-    public static final int ARR_MS = 20;
-    public static final int DAS_MS = 160;
-    public static final int MANIPS = 15;
+    public static final int MAXMANIPS = 15;
     public static final int X = 1;
     public static final int Y = 0;
     public static final int[][] PIECEMATRIX = new int[][]{
@@ -67,6 +62,12 @@ public class a extends JPanel {
     public static final int OPTIONS = 1;
     public static final int GAME = 2;
     public static final int GAMEOVER = 3;
+    public static final double LOCKDELAY = 0.5d;
+    public static final double LINECLEARDELAY = 0.5d;
+    public static final double PIECEENTRYDELAY = 0.1d;
+    public static final double ARR = 0.02d;
+    public static final double DAS = 0.16d;
+
     public static final Point[][][] KICKTABLE = new Point[][][]{
         {
             {new Point(0, 0), new Point(-1, 0), new Point(-1, +1), new Point(0, -2), new Point(-1, -2)},
@@ -100,7 +101,6 @@ public class a extends JPanel {
         }
     };
     public final JFrame frame = new JFrame("Notris Defect");
-    public final double lockDelay = 0.5d;
     public int[] controls = new int[8];
     public boolean[] keyAlreadyProcessed = new boolean[controls.length];
     public boolean[] keyIsDown = new boolean[controls.length];
@@ -112,10 +112,13 @@ public class a extends JPanel {
     public Random pieceRandomizer;
     public boolean dead = true;
     public int[][] stage;
-    public Piece current;
-    public Piece[] nextPieces;
+    public int current;
+    public int currentX;
+    public int currentY;
+    public int currentR;
+    public int[] nextPieces;
     public int nextPiecesLeft;
-    public Piece heldPiece;
+    public int heldPiece;
     public boolean held;
     public double counter;
     public double limit;
@@ -164,8 +167,8 @@ public class a extends JPanel {
     }
 
     public void calcCurrentPieceLowestPossiblePosition() {
-        int result = current.getY();
-        while (!isColliding(current.getX(), result + 1, current.getRotation())) {
+        int result = currentY;
+        while (!isColliding(currentX, result + 1, currentR)) {
             result++;
         }
         lowestPossiblePosition = result;
@@ -176,26 +179,26 @@ public class a extends JPanel {
     }
 
     public void calcLimit() {
-        limit = isTouchingGround() ? lockDelay : (a.instance.keyIsDown[2] ? gravity / gravityMulti : gravity);
+        limit = isTouchingGround() ? LOCKDELAY : (keyIsDown[2] ? gravity / gravityMulti : gravity);
     }
 
     public void checkLockOut() {
-        int piece = PIECEMATRIX[current.getColor()][current.getRotation()];
+        int piece = PIECEMATRIX[current][currentR];
         for (int i = 0; i < PIECEPOINTS; i++) {
-            if (stage[shift(piece, i, Y) + current.getY()][shift(piece, i, X) + current.getX()] != PIECE_NONE) {
+            if (stage[shift(piece, i, Y) + currentY][shift(piece, i, X) + currentX] != PIECE_NONE) {
                 dead = true;
             }
         }
     }
 
     public void checkSpin(int tries, int oldRotation) {
-        int x = current.getX();
-        int y = current.getY();
-        int rot = current.getRotation();
+        int x = currentX;
+        int y = currentY;
+        int rot = currentR;
         boolean[] corners = new boolean[4];
         boolean[] isSignificant = {true, true, false, false};
 
-        if (current.getColor() != PIECE_T) {
+        if (current != PIECE_T) {
             return;
         }
         if (tries == 4 && ((oldRotation == 0 || oldRotation == 2) && (rot == 1 || rot == 3))) {
@@ -230,9 +233,9 @@ public class a extends JPanel {
     }
 
     public void checkTopOut() {
-        int piece = PIECEMATRIX[current.getColor()][current.getRotation()];
+        int piece = PIECEMATRIX[current][currentR];
         for (int i = 0; i < PIECEPOINTS; i++) {
-            if (current.getY() + shift(piece, i, Y) >= STAGESIZEY - PLAYABLEROWS) {
+            if (currentY + shift(piece, i, Y) >= STAGESIZEY - PLAYABLEROWS) {
                 return;
             }
         }
@@ -303,19 +306,19 @@ public class a extends JPanel {
     }
 
     public void drawCurrent(Graphics g) {
-        g.setColor(intToColor(current.getColor()));
-        int piece = PIECEMATRIX[current.getColor()][current.getRotation()];
+        g.setColor(intToColor(current));
+        int piece = PIECEMATRIX[current][currentR];
         for (int i = 0; i < PIECEPOINTS; i++) {
-            drawPix(g, TLCS, shift(piece, i, X) + current.getX(), shift(piece, i, Y) + current.getY());
+            drawPix(g, TLCS, shift(piece, i, X) + currentX, shift(piece, i, Y) + currentY);
         }
     }
 
     public void drawHold(Graphics g) {
         g.setColor(Color.BLACK);
         g.fillRect(TLCH.x, TLCH.y, (PIECESIZE + GRIDSIZE) * 4, (PIECESIZE + GRIDSIZE) * 4);
-        if (heldPiece != null) {
-            g.setColor(intToColor(heldPiece.getColor()));
-            int piece = PIECEMATRIX[heldPiece.getColor()][0];
+        if (heldPiece != -1) {
+            g.setColor(intToColor(heldPiece));
+            int piece = PIECEMATRIX[heldPiece][0];
             for (int i = 0; i < PIECEPOINTS; i++) {
                 drawPix(g, TLCH, shift(piece, i, X), shift(piece, i, Y));
             }
@@ -326,7 +329,7 @@ public class a extends JPanel {
         g.setColor(Color.BLACK);
         g.fillRect(TLCN.x, TLCN.y, (PIECESIZE + GRIDSIZE) * 4, (PIECESIZE + GRIDSIZE) * 4 * 5);
         for (int i = 0; i < 5; i++) {
-            int piece = nextPieces[i].getColor();
+            int piece = nextPieces[i];
             g.setColor(intToColor(piece));
             int piecei = PIECEMATRIX[piece][0];
             for (int j = 0; j < PIECEPOINTS; j++) {
@@ -357,7 +360,7 @@ public class a extends JPanel {
 
     public void hardDropPiece() {
         int lines = 0;
-        while (!isColliding(current.getX(), current.getY() + lines + 1, current.getRotation())) {
+        while (!isColliding(currentX, currentY + lines + 1, currentR)) {
             lines++;
         }
         if (lines > 0) {
@@ -369,12 +372,13 @@ public class a extends JPanel {
 
     public void holdPiece() {
         if (!held) {
-            if (heldPiece == null) {
-                heldPiece = new Piece(current);
+            if (heldPiece == -1) {
+                heldPiece = current;
                 makeNextPiece();
             } else {
-                Piece temp = new Piece(current);
+                int temp = current;
                 current = heldPiece;
+                movePiece(3, 21, 0);
                 heldPiece = temp;
                 calcCurrentPieceLowestPossiblePosition();
                 counter = 0;
@@ -388,16 +392,11 @@ public class a extends JPanel {
     public void init() {
         menuOpen = MAINMENU;
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(700, 700);
-        Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
-        int x = (int) ((dimension.getWidth() - frame.getWidth()) / 2);
-        int y = (int) ((dimension.getHeight() - frame.getHeight()) / 2);
-        frame.setLocation(x, y);
         frame.setContentPane(instance);
         frame.pack();
         frame.setResizable(false);
         frame.setVisible(true);
-        frame.setLocation(x, y);
+        frame.setLocation(100, 100);
         frame.addKeyListener(new KeyListener() {
             @Override
             public void keyTyped(KeyEvent e) {
@@ -434,7 +433,7 @@ public class a extends JPanel {
     public void initGame() {
         pieceRandomizer = new Random();
         dead = false;
-        a.instance.paused = false;
+        paused = false;
         stage = new int[STAGESIZEY][STAGESIZEX];
         for (int i = 0; i < STAGESIZEY; i++) {
             for (int j = 0; j < STAGESIZEX; j++) {
@@ -442,10 +441,10 @@ public class a extends JPanel {
             }
         }
 
-        nextPieces = new Piece[NEXTPIECESMAX + BAG_SIZE];
+        nextPieces = new int[NEXTPIECESMAX + BAG_SIZE];
         nextPiecesLeft = 0;
 
-        heldPiece = null;
+        heldPiece = -1;
         held = false;
 
         counter = 0;
@@ -466,7 +465,7 @@ public class a extends JPanel {
     }
 
     public boolean isColliding(int x, int y, int rotation) {
-        int temp = PIECEMATRIX[current.getColor()][rotation];
+        int temp = PIECEMATRIX[current][rotation];
         for (int i = 0; i < PIECEPOINTS; i++) {
             int tx = shift(temp, i, X);
             int ty = shift(temp, i, Y);
@@ -490,7 +489,7 @@ public class a extends JPanel {
     }
 
     public boolean isTouchingGround() {
-        return isColliding(current.getX(), current.getY() + 1, current.getRotation());
+        return isColliding(currentX, currentY + 1, currentR);
     }
 
     public void keyPressedGAME(KeyEvent e) {
@@ -553,12 +552,12 @@ public class a extends JPanel {
     }
 
     public void lockPiece() {
-        int temp = PIECEMATRIX[current.getColor()][current.getRotation()];
+        int temp = PIECEMATRIX[current][currentR];
 
         totalPiecesPlaced++;
 
         for (int i = 0; i < PIECEPOINTS; i++) {
-            stage[current.getY() + shift(temp, i, Y)][current.getX() + shift(temp, i, X)] = current.getColor();
+            stage[currentY + shift(temp, i, Y)][currentX + shift(temp, i, X)] = current;
         }
 
         checkTopOut();
@@ -581,10 +580,10 @@ public class a extends JPanel {
             level = Math.min((int) (totalLinesCleared / 10 + 1), 20);
 
             totalScore += SCORE[linesCleared][spinState] * (backToBack > 0 ? 1.5 : 1) + (long) combo * SCORE_COMBO * level;
-            waitForClearTicks += ((double) LINE_DELAY_MS / 1000) * TPS;
+            waitForClearTicks += LINECLEARDELAY * TPS;
         } else {
             combo = -1;
-            waitForClearTicks += ((double) ALL_DELAY_MS / 1000) * TPS;
+            waitForClearTicks += PIECEENTRYDELAY * TPS;
         }
 
         makeNextPiece();
@@ -596,9 +595,14 @@ public class a extends JPanel {
             for (int i = 0; i < BAG_SIZE; i++) {
                 bag[i] = i;
             }
-            shuffleArray(bag);
+            for (int i = bag.length - 1; i > 0; i--) {
+                int index = ((pieceRandomizer.nextInt() % (i + 1) + i + 1)) % (i + 1);
+                int a = bag[index];
+                bag[index] = bag[i];
+                bag[i] = a;
+            }
             for (int i = 0; i < BAG_SIZE; i++) {
-                nextPieces[nextPiecesLeft + i] = new Piece(bag[i]);
+                nextPieces[nextPiecesLeft + i] = bag[i];
             }
             nextPiecesLeft += BAG_SIZE;
         }
@@ -611,9 +615,9 @@ public class a extends JPanel {
     public boolean movePiece(int newX, int newY, int newR) {
         if (!isColliding(newX, newY, newR)) {
             counter = 0;
-            current.setX(newX);
-            current.setY(newY);
-            current.setRotation(newR);
+            currentX = newX;
+            currentY = newY;
+            currentR = newR;
             spinState = SPIN_NONE;
             calcCurrentPieceLowestPossiblePosition();
             calcLimit();
@@ -623,7 +627,7 @@ public class a extends JPanel {
     }
 
     public boolean movePieceRelative(int xOffset, int yOffset) {
-        return movePiece(current.getX() + xOffset, current.getY() + yOffset, current.getRotation());
+        return movePiece(currentX + xOffset, currentY + yOffset, currentR);
     }
 
     @Override
@@ -655,8 +659,10 @@ public class a extends JPanel {
     public void paintComponentGAME(Graphics g) {
         long timeStart = System.nanoTime();
 
-        g.setColor(Color.WHITE);
-        g.drawString("Score: " + totalScore, 30, 30);
+        g.setColor(Color.BLACK);
+        g.drawString("Score: " + totalScore, 30, 330);
+        g.drawString("paused: " + paused, 30, 345);
+        g.drawString("wait: " + waitForClearTicks, 30, 360);
 
         drawStage(g);
         drawHold(g);
@@ -691,13 +697,13 @@ public class a extends JPanel {
     }
 
     public void processKeys() {
-        for (int i = 0; i < a.instance.controls.length; i++) {
-            if (a.instance.keyIsDown[i]) {
-                if (!(onlyOnePress[i] && a.instance.keyAlreadyProcessed[i])) {
+        for (int i = 0; i < controls.length; i++) {
+            if (keyIsDown[i]) {
+                if (!(onlyOnePress[i] && keyAlreadyProcessed[i])) {
                     doAction(i);
-                    a.instance.keyAlreadyProcessed[i] = true;
+                    keyAlreadyProcessed[i] = true;
                 }
-                a.instance.howLongIsPressed[i]++;
+                howLongIsPressed[i]++;
             }
         }
     }
@@ -714,7 +720,7 @@ public class a extends JPanel {
                     Thread.sleep(1);
                 } catch (InterruptedException ignored) {
                 }
-                if (!a.instance.paused) {
+                if (!paused) {
                     delta += (timeNow - timeLast) / expectedTickTime;
                 }
                 timeLast = timeNow;
@@ -731,13 +737,13 @@ public class a extends JPanel {
     }
 
     public void rotatePiece(int d) {
-        int oldRotation = current.getRotation();
-        int newRotation = (current.getRotation() + d + 4) % 4;
-        int piece = current.getColor();
+        int oldRotation = currentR;
+        int newRotation = (currentR + d + 4) % 4;
+        int piece = current;
         int state = STATES[oldRotation][newRotation];
 
         for (int tries = 0; tries < KICKTABLE[piece == 4 ? 1 : 0][state].length; tries++) {
-            if (movePiece(current.getX() + KICKTABLE[piece == 4 ? 1 : 0][state][tries].x, current.getY() - KICKTABLE[piece == 4 ? 1 : 0][state][tries].y, newRotation)) {
+            if (movePiece(currentX + KICKTABLE[piece == 4 ? 1 : 0][state][tries].x, currentY - KICKTABLE[piece == 4 ? 1 : 0][state][tries].y, newRotation)) {
                 checkSpin(tries, oldRotation);
                 return;
             }
@@ -748,18 +754,9 @@ public class a extends JPanel {
         return n >> 2 * (i * 2 + or) & 0b11;
     }
 
-    public void shuffleArray(int[] ar) {
-        for (int i = ar.length - 1; i > 0; i--) {
-            int index = ((pieceRandomizer.nextInt() % (i + 1) + i + 1)) % (i + 1);
-            // Simple swap
-            int a = ar[index];
-            ar[index] = ar[i];
-            ar[i] = a;
-        }
-    }
-
     public void spawnPiece() {
         current = nextPieces[0];
+        movePiece(3, 21, 0);
         System.arraycopy(nextPieces, 1, nextPieces, 0, nextPieces.length - 1);
         nextPiecesLeft--;
         held = false;
