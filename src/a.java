@@ -13,15 +13,6 @@ import java.io.IOException;
 import java.util.Random;
 
 public class a extends JPanel {
-    public static final int PIECE_T = 6;
-    public static final int PIECE_NONE = 7;
-    public static final int SPIN_NONE = 0;
-    public static final int SPIN_MINI = 1;
-    public static final int SPIN_FULL = 2;
-    public static final int TPS = 100;
-    public static final int MAXMANIPS = 15;
-    public static final int X = 1;
-    public static final int Y = 0;
     public static final int[][] PIECEMATRIX = new int[][]{
         {0b0000010001011001, 0b1000100101010110, 0b1010011001010001, 0b0010000101010100},
         {0b1000000101011001, 0b0100011001011010, 0b0010100101010001, 0b0110010001010000},
@@ -44,18 +35,9 @@ public class a extends JPanel {
         {500, 0, 1600},
         {800, 0, 2600}
     };
-    public static final int SCORE_ALLCLEAR = 3500;
-    public static final int SCORE_COMBO = 50;
-    public static final int SCORE_SOFTDROP = 1;
-    public static final int SCORE_HARDDROP = 2;
     public static final double gravityMulti = 20;
     public static final a instance = new a();
-    public static final int VISIBLEROWS = 21;
     public static final String[] kontrols = {"left", "right", "sd", "hd", "ccw", "cw", "180", "hold"};
-    public static final int MAINMENU = 0;
-    public static final int OPTIONS = 1;
-    public static final int GAME = 2;
-    public static final int GAMEOVER = 3;
     public static final double LOCKDELAY = 0.5d;
     public static final double LINECLEARDELAY = 0.5d;
     public static final double PIECEENTRYDELAY = 0.1d;
@@ -120,17 +102,12 @@ public class a extends JPanel {
     public long ticksPassed;
     public long totalScore;
     public long totalLinesCleared;
-    public long totalPiecesPlaced;
     public int level;
     public double gravity;
     public int lowestPossiblePosition;
     public int spinState;
     public int waitForClearTicks;
     public int waitForShiftTicks;
-    public int STAGESIZEX = 10;
-    public int STAGESIZEY = 40;
-    public int PLAYABLEROWS = 20;
-    public int NEXTPIECESMAX = 5;
     public int manipulations;
     public int lowest;
 
@@ -180,7 +157,7 @@ public class a extends JPanel {
     public void checkLockOut() {
         int piece = PIECEMATRIX[current][currentR];
         for (int i = 0; i < 4; i++) {
-            if (stage[shift(piece, i, Y) + currentY][shift(piece, i, X) + currentX] != PIECE_NONE) {
+            if (stage[shift(piece, i, 0) + currentY][shift(piece, i, 1) + currentX] != 7) {
                 dead = true;
             }
         }
@@ -193,11 +170,11 @@ public class a extends JPanel {
         boolean[] corners = new boolean[4];
         boolean[] isSignificant = {true, true, false, false};
 
-        if (current != PIECE_T) {
+        if (current != 6) {
             return;
         }
         if (tries == 4 && ((oldRotation == 0 || oldRotation == 2) && (rot == 1 || rot == 3))) {
-            spinState = SPIN_FULL;
+            spinState = 2;
             return;
         }
 
@@ -219,18 +196,18 @@ public class a extends JPanel {
         }
 
         if (significant == 2 && others >= 1) {
-            spinState = SPIN_FULL;
+            spinState = 2;
         } else if (significant == 1 && others == 2) {
-            spinState = SPIN_MINI;
+            spinState = 1;
         } else {
-            spinState = SPIN_NONE;
+            spinState = 0;
         }
     }
 
     public void checkTopOut() {
         int piece = PIECEMATRIX[current][currentR];
         for (int i = 0; i < 4; i++) {
-            if (currentY + shift(piece, i, Y) >= STAGESIZEY - PLAYABLEROWS) {
+            if (currentY + shift(piece, i, 0) >= 40 - 20) {
                 return;
             }
         }
@@ -239,11 +216,11 @@ public class a extends JPanel {
 
     public void clearLine(int line) {
         for (int i = line; i > 0; i--) {
-            System.arraycopy(stage[i - 1], 0, stage[i], 0, STAGESIZEX);
+            System.arraycopy(stage[i - 1], 0, stage[i], 0, 10);
         }
 
-        for (int j = 0; j < STAGESIZEX; j++) {
-            stage[0][j] = PIECE_NONE;
+        for (int j = 0; j < 10; j++) {
+            stage[0][j] = 7;
         }
 
         totalLinesCleared++;
@@ -253,10 +230,10 @@ public class a extends JPanel {
     public int clearLines() {
         int numClears = 0;
         boolean yes;
-        for (int i = STAGESIZEY - 1; i > 0; i--) {
+        for (int i = 40 - 1; i > 0; i--) {
             yes = true;
-            for (int j = 0; j < STAGESIZEX; j++) {
-                if (stage[i][j] == PIECE_NONE) {
+            for (int j = 0; j < 10; j++) {
+                if (stage[i][j] == 7) {
                     yes = false;
                     break;
                 }
@@ -282,7 +259,6 @@ public class a extends JPanel {
                 break;
             case 2:
                 movePieceRelative(0, 1);
-                totalScore += Math.max(0, SCORE_SOFTDROP);
                 break;
             case 3:
                 int lines = 0;
@@ -291,7 +267,7 @@ public class a extends JPanel {
                 }
                 if (lines > 0) {
                     movePieceRelative(0, +lines);
-                    totalScore += (long) lines * SCORE_HARDDROP;
+                    totalScore += (long) lines * 2;
                 }
                 lockPiece();
                 break;
@@ -313,10 +289,12 @@ public class a extends JPanel {
                         int temp = current;
                         current = heldPiece;
                         manipulations = 0;
-                        movePiece(3, 21, 0);
+                        movePiece(3, 18, 0);
                         lowest = 0;
                         manipulations = 0;
-                        movePieceRelative(0, 1);
+                        if (movePieceRelative(0, 1) && keyIsDown[2]) {
+                            totalScore--;
+                        }
                         heldPiece = temp;
                         calcCurrentPieceLowestPossiblePosition();
                         counter = 0;
@@ -341,7 +319,7 @@ public class a extends JPanel {
             }
         } catch (IOException ignored) {
         }
-        menuOpen = MAINMENU;
+        menuOpen = 0;
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setContentPane(instance);
         frame.pack();
@@ -357,15 +335,15 @@ public class a extends JPanel {
             @Override
             public void keyPressed(KeyEvent e) {
                 switch (menuOpen) {
-                    case MAINMENU:
+                    case 0:
                         if (e.getKeyCode() == KeyEvent.VK_P) {
-                            initGame();
-                            menuOpen = GAME;
+                            init2();
+                            menuOpen = 2;
                         } else if (e.getKeyCode() == KeyEvent.VK_O) {
-                            menuOpen = OPTIONS;
+                            menuOpen = 1;
                         }
                         break;
-                    case OPTIONS:
+                    case 1:
                         controls[keysPressed] = e.getKeyCode();
                         keysPressed++;
                         if (keysPressed == 8) {
@@ -379,17 +357,17 @@ public class a extends JPanel {
                             } catch (IOException ex) {
                                 new File("controls.txt");
                             }
-                            menuOpen = MAINMENU;
+                            menuOpen = 0;
                         } else {
                             repaint();
                         }
                         break;
-                    case GAME:
+                    case 2:
                         if (e.getKeyCode() == KeyEvent.VK_E) {
                             paused ^= true;
                         } else if (e.getKeyCode() == KeyEvent.VK_B) {
                             dead = true;
-                            menuOpen = MAINMENU;
+                            menuOpen = 0;
                         }
 
                         int key = e.getKeyCode();
@@ -400,12 +378,12 @@ public class a extends JPanel {
                             }
                         }
                         break;
-                    case GAMEOVER:
+                    case 3:
                         if (e.getKeyCode() == KeyEvent.VK_R) {
-                            initGame();
-                            menuOpen = GAME;
+                            init2();
+                            menuOpen = 2;
                         } else if (e.getKeyCode() == KeyEvent.VK_B) {
-                            menuOpen = MAINMENU;
+                            menuOpen = 0;
                         }
                         break;
                 }
@@ -413,7 +391,7 @@ public class a extends JPanel {
 
             @Override
             public void keyReleased(KeyEvent e) {
-                if (menuOpen == GAME) {
+                if (menuOpen == 2) {
                     int key = e.getKeyCode();
                     for (int i = 0; i < controls.length; i++) {
                         if (key == controls[i]) {
@@ -428,14 +406,14 @@ public class a extends JPanel {
         });
     }
 
-    public void initGame() {
+    public void init2() {
         pieceRandomizer = new Random();
         dead = false;
         paused = false;
-        stage = new int[STAGESIZEY][STAGESIZEX];
-        for (int i = 0; i < STAGESIZEY; i++) {
-            for (int j = 0; j < STAGESIZEX; j++) {
-                stage[i][j] = PIECE_NONE;
+        stage = new int[40][10];
+        for (int i = 0; i < 40; i++) {
+            for (int j = 0; j < 10; j++) {
+                stage[i][j] = 7;
             }
         }
 
@@ -444,7 +422,7 @@ public class a extends JPanel {
         waitForClearTicks = 0;
         waitForShiftTicks = 0;
 
-        nextPieces = new int[NEXTPIECESMAX + 7];
+        nextPieces = new int[5 + 7];
         nextPiecesLeft = 0;
 
         heldPiece = -1;
@@ -458,7 +436,6 @@ public class a extends JPanel {
         ticksPassed = 0;
         totalScore = 0;
         totalLinesCleared = 0;
-        totalPiecesPlaced = 0;
 
         level = 1;
 
@@ -470,10 +447,10 @@ public class a extends JPanel {
     public boolean isColliding(int x, int y, int rotation) {
         int temp = PIECEMATRIX[current][rotation];
         for (int i = 0; i < 4; i++) {
-            int tx = shift(temp, i, X);
-            int ty = shift(temp, i, Y);
+            int tx = shift(temp, i, 1);
+            int ty = shift(temp, i, 0);
             if (isInsideBounds(x + tx, y + ty)) {
-                if (stage[y + ty][x + tx] != PIECE_NONE) {
+                if (stage[y + ty][x + tx] != 7) {
                     return true;
                 }
             } else {
@@ -484,11 +461,11 @@ public class a extends JPanel {
     }
 
     public boolean isInsideBounds(int x, int y) {
-        return y >= 0 && STAGESIZEY > y && x >= 0 && STAGESIZEX > x;
+        return y >= 0 && 40 > y && x >= 0 && 10 > x;
     }
 
     public boolean isSolid(int x, int y) {
-        return !isInsideBounds(x, y) || stage[y][x] != PIECE_NONE;
+        return !isInsideBounds(x, y) || stage[y][x] != 7;
     }
 
     public boolean isTouchingGround() {
@@ -498,10 +475,8 @@ public class a extends JPanel {
     public void lockPiece() {
         int temp = PIECEMATRIX[current][currentR];
 
-        totalPiecesPlaced++;
-
         for (int i = 0; i < 4; i++) {
-            stage[currentY + shift(temp, i, Y)][currentX + shift(temp, i, X)] = current;
+            stage[currentY + shift(temp, i, 0)][currentX + shift(temp, i, 1)] = current;
         }
 
         checkTopOut();
@@ -511,11 +486,7 @@ public class a extends JPanel {
         if (linesCleared > 0) {
             combo++;
 
-            if (totalLinesCleared * STAGESIZEX == totalPiecesPlaced * 4) {
-                totalScore += SCORE_ALLCLEAR;
-            }
-
-            if (linesCleared == 4 || spinState != SPIN_NONE) {
+            if (linesCleared == 4 || spinState != 0) {
                 backToBack++;
             } else {
                 backToBack = -1;
@@ -524,18 +495,18 @@ public class a extends JPanel {
             level = Math.min((int) (totalLinesCleared / 10 + 1), 20);
             calcGravity();
 
-            totalScore += (SCORE[linesCleared][spinState] * (backToBack > 0 ? 1.5 : 1) + (long) combo * SCORE_COMBO) * level;
-            waitForClearTicks += LINECLEARDELAY * TPS;
+            totalScore += (SCORE[linesCleared][spinState] * (backToBack > 0 ? 1.5 : 1) + (long) combo * 50) * level;
+            waitForClearTicks += LINECLEARDELAY * 100;
         } else {
             combo = -1;
-            waitForClearTicks += PIECEENTRYDELAY * TPS;
+            waitForClearTicks += PIECEENTRYDELAY * 100;
         }
 
         makeNextPiece();
     }
 
     public void makeNextPiece() {
-        while (nextPiecesLeft <= NEXTPIECESMAX) {
+        while (nextPiecesLeft <= 5) {
             int[] bag = new int[7];
             for (int i = 0; i < 7; i++) {
                 bag[i] = i;
@@ -559,10 +530,13 @@ public class a extends JPanel {
         if (!isColliding(newX, newY, newR)) {
             counter = 0;
             manipulations++;
+            if (keyIsDown[2]) {
+                totalScore += Math.max(newY - currentY, 0);
+            }
             currentX = newX;
             currentY = newY;
             currentR = newR;
-            spinState = SPIN_NONE;
+            spinState = 0;
             calcCurrentPieceLowestPossiblePosition();
             calcLimit();
             if (manipulations > 15) {
@@ -588,32 +562,27 @@ public class a extends JPanel {
         g.setColor(Color.YELLOW);
         g.fillRect(0, 0, 720, 720);
         switch (menuOpen) {
-            case MAINMENU:
+            case 0:
                 g.setColor(Color.BLACK);
                 g.drawString("Play", 300, 300);
                 g.drawString("Options", 300, 315);
                 break;
-            case OPTIONS:
+            case 1:
                 g.setColor(Color.BLACK);
                 g.drawString(kontrols[keysPressed], 300, 300);
                 break;
-            case GAME:
+            case 2:
                 g.setColor(Color.BLACK);
                 g.drawString(paused ? "resumE" : "pausE", 30, 300);
                 g.drawString("Back", 30, 315);
 
                 g.drawString("score: " + totalScore, 30, 400);
-                g.drawString("wait: " + waitForClearTicks, 30, 415);
-                g.drawString("level: " + level, 30, 430);
-                g.drawString("grav: " + gravity, 30, 445);
-                g.drawString("ln: " + totalLinesCleared, 30, 460);
-                g.drawString("limit: " + limit, 30, 475);
 
                 // stage hold next current
                 g.setColor(Color.WHITE);
                 g.fillRect(185, 12, 350, 703);
-                for (int i = STAGESIZEY - VISIBLEROWS; i < STAGESIZEY; i++) {
-                    for (int j = 0; j < STAGESIZEX; j++) {
+                for (int i = 19; i < 40; i++) {
+                    for (int j = 0; j < 10; j++) {
                         g.setColor(intToColor(stage[i][j]));
                         drawPix(g, 195, -615, j, i);
                     }
@@ -625,7 +594,7 @@ public class a extends JPanel {
                     g.setColor(intToColor(heldPiece));
                     int piece = PIECEMATRIX[heldPiece][0];
                     for (int i = 0; i < 4; i++) {
-                        drawPix(g, 30, 45, shift(piece, i, X), shift(piece, i, Y));
+                        drawPix(g, 30, 45, shift(piece, i, 1), shift(piece, i, 0));
                     }
                 }
 
@@ -636,25 +605,27 @@ public class a extends JPanel {
                     g.setColor(intToColor(piece));
                     int piecei = PIECEMATRIX[piece][0];
                     for (int j = 0; j < 4; j++) {
-                        drawPix(g, 558, 45, shift(piecei, j, X), i * 4 + shift(piecei, j, Y));
+                        drawPix(g, 558, 45, shift(piecei, j, 1), i * 4 + shift(piecei, j, 0));
                     }
                 }
 
                 int piece = PIECEMATRIX[current][currentR];
-                for (int i = 0; i < 4; i++) {
-                    g.setColor(Color.WHITE);
-                    drawPix(g, 195, -615, shift(piece, i, X) + currentX, shift(piece, i, Y) + lowestPossiblePosition);
-                }
-                for (int i = 0; i < 4; i++) {
-                    g.setColor(intToColor(current));
-                    drawPix(g, 195, -615, shift(piece, i, X) + currentX, shift(piece, i, Y) + currentY);
+                if (waitForClearTicks == 0) {
+                    for (int i = 0; i < 4; i++) {
+                        g.setColor(Color.WHITE);
+                        drawPix(g, 195, -615, shift(piece, i, 1) + currentX, shift(piece, i, 0) + lowestPossiblePosition);
+                    }
+                    for (int i = 0; i < 4; i++) {
+                        g.setColor(intToColor(current));
+                        drawPix(g, 195, -615, shift(piece, i, 1) + currentX, shift(piece, i, 0) + currentY);
+                    }
                 }
 
                 if (dead) {
-                    menuOpen = GAMEOVER;
+                    menuOpen = 3;
                 }
                 break;
-            case GAMEOVER:
+            case 3:
                 g.setColor(Color.BLACK);
                 g.drawString("score: " + totalScore, 300, 300);
                 g.drawString("Retry", 300, 315);
@@ -679,10 +650,10 @@ public class a extends JPanel {
                 howLongIsPressed[i]++;
             }
         }
-        if ((howLongIsPressed[0] - (int) (DAS * TPS)) >= 0 && (howLongIsPressed[0] - (int) (DAS * TPS)) % (int) (ARR * TPS) == 0) {
+        if ((howLongIsPressed[0] - (int) (DAS * 100)) >= 0 && (howLongIsPressed[0] - (int) (DAS * 100)) % (int) (ARR * 100) == 0) {
             doAction(0);
         }
-        if ((howLongIsPressed[1] - (int) (DAS * TPS)) >= 0 && (howLongIsPressed[1] - (int) (DAS * TPS)) % (int) (ARR * TPS) == 0) {
+        if ((howLongIsPressed[1] - (int) (DAS * 100)) >= 0 && (howLongIsPressed[1] - (int) (DAS * 100)) % (int) (ARR * 100) == 0) {
             doAction(1);
         }
 
@@ -690,7 +661,7 @@ public class a extends JPanel {
 
     public void roomLoop() {
         new Thread(() -> {
-            final double expectedTickTime = 1e9 / TPS;
+            final double expectedTickTime = 1e9 / 100;
             long timeLast = System.nanoTime();
             long timeNow;
             double delta = 0;
@@ -737,14 +708,16 @@ public class a extends JPanel {
     public void spawnPiece() {
         current = nextPieces[0];
         manipulations = 0;
-        movePiece(3, 21, 0);
+        movePiece(3, 18, 0);
         lowest = 0;
         manipulations = 0;
-        movePieceRelative(0, 1);
+        if (movePieceRelative(0, 1) && keyIsDown[2]) {
+            totalScore--;
+        }
         System.arraycopy(nextPieces, 1, nextPieces, 0, nextPieces.length - 1);
         nextPiecesLeft--;
         held = false;
-        spinState = SPIN_NONE;
+        spinState = 0;
         calcCurrentPieceLowestPossiblePosition();
         counter = 0;
         calcLimit();
@@ -752,7 +725,7 @@ public class a extends JPanel {
 
     public void tick() {
         processKeys();
-        counter += 1 / (double) TPS;
+        counter += 1 / (double) 100;
 
         if (counter >= limit) {
             if (!movePieceRelative(0, +1)) {
