@@ -9,7 +9,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Random;
 
 public class a extends JPanel {
@@ -35,14 +34,8 @@ public class a extends JPanel {
         {500, 0, 1600},
         {800, 0, 2600}
     };
-    public static final double gravityMulti = 20;
     public static final a instance = new a();
-    public static final String[] kontrols = {"left", "right", "sd", "hd", "ccw", "cw", "180", "hold"};
-    public static final double LOCKDELAY = 0.5d;
-    public static final double LINECLEARDELAY = 0.5d;
-    public static final double PIECEENTRYDELAY = 0.1d;
-    public static final double ARR = 0.02d;
-    public static final double DAS = 0.16d;
+    public static final String[] kontrols = {"left", "right", "sd", "hd", "ccw", "cw", "hold"};
 
     public static final int[][][] KICKTABLE = new int[][][]{
         {
@@ -77,10 +70,10 @@ public class a extends JPanel {
         }
     };
     public final JFrame frame = new JFrame("Notris Defect");
-    public int[] controls = new int[8];
-    public boolean[] keyAlreadyProcessed = new boolean[controls.length];
-    public boolean[] keyIsDown = new boolean[controls.length];
-    public int[] howLongIsPressed = new int[controls.length];
+    public int[] controls = new int[7];
+    public boolean[] keyAlreadyProcessed = new boolean[7];
+    public boolean[] keyIsDown = new boolean[7];
+    public int[] howLongIsPressed = new int[7];
     public int menuOpen;
     public int keysPressed = 0;
     public boolean paused = false;
@@ -151,7 +144,7 @@ public class a extends JPanel {
     }
 
     public void calcLimit() {
-        limit = isTouchingGround() ? LOCKDELAY : (keyIsDown[2] ? gravity / gravityMulti : gravity);
+        limit = isTouchingGround() ? 50 : (keyIsDown[2] ? gravity / 20 : gravity) * 100;
     }
 
     public void checkLockOut() {
@@ -278,9 +271,6 @@ public class a extends JPanel {
                 rotatePiece(1);
                 break;
             case 6:
-                rotatePiece(2);
-                break;
-            case 7:
                 if (!held) {
                     if (heldPiece == -1) {
                         heldPiece = current;
@@ -314,10 +304,10 @@ public class a extends JPanel {
     public void init() {
         try {
             BufferedReader br = new BufferedReader(new FileReader("controls.txt"));
-            for (int i = 0; i < controls.length; i++) {
+            for (int i = 0; i < 7; i++) {
                 controls[i] = Integer.parseInt(br.readLine());
             }
-        } catch (IOException ignored) {
+        } catch (Exception ignored) {
         }
         menuOpen = 0;
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -346,7 +336,7 @@ public class a extends JPanel {
                     case 1:
                         controls[keysPressed] = e.getKeyCode();
                         keysPressed++;
-                        if (keysPressed == 8) {
+                        if (keysPressed == 7) {
                             keysPressed = 0;
                             try {
                                 FileWriter fw = new FileWriter("controls.txt");
@@ -354,7 +344,7 @@ public class a extends JPanel {
                                     fw.write(control + "\n");
                                 }
                                 fw.close();
-                            } catch (IOException ex) {
+                            } catch (Exception ex) {
                                 new File("controls.txt");
                             }
                             menuOpen = 0;
@@ -371,7 +361,7 @@ public class a extends JPanel {
                         }
 
                         int key = e.getKeyCode();
-                        for (int i = 0; i < controls.length; i++) {
+                        for (int i = 0; i < 7; i++) {
                             if (key == controls[i]) {
                                 keyIsDown[i] = true;
                                 break;
@@ -393,7 +383,7 @@ public class a extends JPanel {
             public void keyReleased(KeyEvent e) {
                 if (menuOpen == 2) {
                     int key = e.getKeyCode();
-                    for (int i = 0; i < controls.length; i++) {
+                    for (int i = 0; i < 7; i++) {
                         if (key == controls[i]) {
                             keyIsDown[i] = false;
                             keyAlreadyProcessed[i] = false;
@@ -496,10 +486,10 @@ public class a extends JPanel {
             calcGravity();
 
             totalScore += (SCORE[linesCleared][spinState] * (backToBack > 0 ? 1.5 : 1) + (long) combo * 50) * level;
-            waitForClearTicks += LINECLEARDELAY * 100;
+            waitForClearTicks += 50;
         } else {
             combo = -1;
-            waitForClearTicks += PIECEENTRYDELAY * 100;
+            waitForClearTicks += 10;
         }
 
         makeNextPiece();
@@ -641,7 +631,7 @@ public class a extends JPanel {
     }
 
     public void processKeys() {
-        for (int i = 0; i < controls.length; i++) {
+        for (int i = 0; i < 7; i++) {
             if (keyIsDown[i]) {
                 if (!keyAlreadyProcessed[i]) {
                     doAction(i);
@@ -650,10 +640,10 @@ public class a extends JPanel {
                 howLongIsPressed[i]++;
             }
         }
-        if ((howLongIsPressed[0] - (int) (DAS * 100)) >= 0 && (howLongIsPressed[0] - (int) (DAS * 100)) % (int) (ARR * 100) == 0) {
+        if ((howLongIsPressed[0] - 16) >= 0 && (howLongIsPressed[0] - 16) % 2 == 0) {
             doAction(0);
         }
-        if ((howLongIsPressed[1] - (int) (DAS * 100)) >= 0 && (howLongIsPressed[1] - (int) (DAS * 100)) % (int) (ARR * 100) == 0) {
+        if ((howLongIsPressed[1] - 16) >= 0 && (howLongIsPressed[1] - 16) % 2 == 0) {
             doAction(1);
         }
 
@@ -661,7 +651,7 @@ public class a extends JPanel {
 
     public void roomLoop() {
         new Thread(() -> {
-            final double expectedTickTime = 1e9 / 100;
+            final double expectedTickTime = 1e7;
             long timeLast = System.nanoTime();
             long timeNow;
             double delta = 0;
@@ -725,10 +715,8 @@ public class a extends JPanel {
 
     public void tick() {
         processKeys();
-        counter += 1 / (double) 100;
-
-        if (counter >= limit) {
-            if (!movePieceRelative(0, +1)) {
+        if (++counter >= limit) {
+            if (!movePieceRelative(0, 1)) {
                 lockPiece();
             }
         }
