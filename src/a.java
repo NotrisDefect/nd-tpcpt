@@ -5,6 +5,11 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Random;
 
 public class a extends JPanel {
@@ -45,7 +50,7 @@ public class a extends JPanel {
     public static final int SCORE_HARDDROP = 2;
     public static final double gravityMulti = 20;
     public static final a instance = new a();
-    public static final boolean[] onlyOnePress = {false, false, false, true, true, true, true, true};
+    public static final boolean[] onlyOnePress = {true, true, false, true, true, true, true, true};
     public static final int PIECESIZE = 32;
     public static final int VISIBLEROWS = 21;
     public static final int GRIDSIZE = 1;
@@ -132,7 +137,8 @@ public class a extends JPanel {
     public double gravity;
     public int lowestPossiblePosition;
     public int spinState;
-    public int waitForClearTicks = 0;
+    public int waitForClearTicks;
+    public int waitForShiftTicks;
     public int STAGESIZEX = 10;
     public int STAGESIZEY = 40;
     public final int[] MANIPS_USED = new int[STAGESIZEY];
@@ -276,6 +282,7 @@ public class a extends JPanel {
         return numClears;
     }
 
+
     public void doAction(int i) {
         switch (i) {
             case 0:
@@ -285,7 +292,8 @@ public class a extends JPanel {
                 movePieceRelative(1, 0);
                 break;
             case 2:
-                extDropPieceSoft();
+                movePieceRelative(0, 1);
+                totalScore += Math.max(0, SCORE_SOFTDROP);
                 break;
             case 3:
                 int lines = 0;
@@ -332,12 +340,14 @@ public class a extends JPanel {
         g.fillRect(tlcx + x * (PIECESIZE + GRIDSIZE), tlcy + y * (PIECESIZE + GRIDSIZE), PIECESIZE, PIECESIZE);
     }
 
-    public void extDropPieceSoft() {
-        movePieceRelative(0, 1);
-        totalScore += Math.max(0, SCORE_SOFTDROP);
-    }
-
     public void init() {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader("controls.txt"));
+            for (int i = 0; i < controls.length; i++) {
+                controls[i] = Integer.parseInt(br.readLine());
+            }
+        } catch (IOException e) {
+        }
         menuOpen = MAINMENU;
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setContentPane(instance);
@@ -368,6 +378,15 @@ public class a extends JPanel {
                         if (keysPressed == 8) {
                             hasBeenSet = true;
                             keysPressed = 0;
+                            try {
+                                FileWriter fw = new FileWriter("controls.txt");
+                                for (int i = 0; i < controls.length; i++) {
+                                    fw.write(controls[i] + "\n");
+                                }
+                                fw.close();
+                            } catch (IOException ex) {
+                                new File("controls.txt");
+                            }
                             menuOpen = MAINMENU;
                         } else {
                             repaint();
@@ -428,6 +447,9 @@ public class a extends JPanel {
             }
         }
 
+        waitForClearTicks = 0;
+        waitForShiftTicks = 0;
+
         nextPieces = new int[NEXTPIECESMAX + 7];
         nextPiecesLeft = 0;
 
@@ -477,10 +499,6 @@ public class a extends JPanel {
 
     public boolean isTouchingGround() {
         return isColliding(currentX, currentY + 1, currentR);
-    }
-
-    public void load() {
-
     }
 
     public void lockPiece() {
@@ -617,9 +635,13 @@ public class a extends JPanel {
                     }
                 }
 
-                g.setColor(intToColor(current));
                 int piece = PIECEMATRIX[current][currentR];
                 for (int i = 0; i < 4; i++) {
+                    g.setColor(Color.WHITE);
+                    drawPix(g, TLCSX, TLCSY, shift(piece, i, X) + currentX, shift(piece, i, Y) + lowestPossiblePosition);
+                }
+                for (int i = 0; i < 4; i++) {
+                    g.setColor(intToColor(current));
                     drawPix(g, TLCSX, TLCSY, shift(piece, i, X) + currentX, shift(piece, i, Y) + currentY);
                 }
 
@@ -656,6 +678,13 @@ public class a extends JPanel {
                 howLongIsPressed[i]++;
             }
         }
+        if ((howLongIsPressed[0] - (int) (DAS * TPS)) >= 0 && (howLongIsPressed[0] - (int) (DAS * TPS)) % (int) (ARR * TPS) == 0) {
+            doAction(0);
+        }
+        if ((howLongIsPressed[1] - (int) (DAS * TPS)) >= 0 && (howLongIsPressed[1] - (int) (DAS * TPS)) % (int) (ARR * TPS) == 0) {
+            doAction(1);
+        }
+
     }
 
     public void roomLoop() {
@@ -698,10 +727,6 @@ public class a extends JPanel {
                 return;
             }
         }
-    }
-
-    public void save() {
-
     }
 
     public int shift(int n, int i, int or) {
